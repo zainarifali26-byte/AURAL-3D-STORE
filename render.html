@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AURAL offline renderer (dev only)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #07090d;
+      }
+      #stage {
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Used only by scripts/render-products.mjs through the dev server. Not part of the build. -->
+    <div id="stage"></div>
+    <script type="module" src="/src/render/main.js"></script>
+  </body>
+</html>

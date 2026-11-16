@@ -41,7 +41,7 @@ export default function QuickView({ product, initialColour, onClose }) {
         <button type="button" className="icon-button quick-view-close" onClick={onClose} aria-label="Close quick view">
           <Icon name="close" />
         </button>
-        <div className="quick-view-media" data-tone={colour.tone}>
+        <div className="quick-view-media">
           <ProductImage product={product} colour={colour} sizes="(max-width: 760px) 90vw, 420px" eager />
         </div>
         <div className="quick-view-body">

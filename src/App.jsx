@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect } from 'react';
+﻿import { lazy, Suspense, useEffect, useLayoutEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Nav from './components/Nav.jsx';
 import Footer from './components/Footer.jsx';
@@ -22,6 +22,7 @@ const ShippingPage = info('ShippingPage');
 const ReturnsPage = info('ReturnsPage');
 const PrivacyPage = info('PrivacyPage');
 const TermsPage = info('TermsPage');
+const CreditsPage = info('CreditsPage');
 
 // Route changes start at the top; hash links (/#technology) scroll to their
 // target once the page and its ScrollTriggers have laid out.
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="/returns" element={<ReturnsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
+            <Route path="/credits" element={<CreditsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

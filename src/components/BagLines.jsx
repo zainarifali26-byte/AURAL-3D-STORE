@@ -3,7 +3,7 @@ import Icon from './Icon.jsx';
 import QuantityStepper from './QuantityStepper.jsx';
 import { useBag } from '../state/bag.jsx';
 import { formatPrice } from '../config/brand.js';
-import { productImage } from '../data/products.js';
+import { resolveAsset, assetSrc } from '../data/assets.js';
 
 export default function BagLines({ onNavigate, compact = false }) {
   const { lines, setQty, changeColour, remove, maxQty } = useBag();
@@ -11,10 +11,11 @@ export default function BagLines({ onNavigate, compact = false }) {
     <ul className={`bag-lines${compact ? ' bag-lines-compact' : ''}`}>
       {lines.map((l) => {
         const key = `${l.productId}-${l.colourId}`;
+        const asset = resolveAsset(l.product, l.colour, l.colour.images[0]);
         return (
           <li key={key} className="bag-line">
-            <div className="bag-line-img" data-tone={l.colour.tone}>
-              <img src={productImage(l.productId, l.colourId, 'hero', 600)} alt="" width="600" height="500" loading="lazy" />
+            <div className="bag-line-img">
+              <img src={assetSrc(asset, 'small')} alt="" width={asset.small} height={asset.small * 1.25} loading="lazy" />
             </div>
             <div className="bag-line-info">
               <div className="bag-line-top">

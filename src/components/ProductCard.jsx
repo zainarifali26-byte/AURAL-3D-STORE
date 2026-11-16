@@ -9,12 +9,12 @@ import { AVAILABILITY, getCategory } from '../data/products.js';
 
 const BADGE_TEXT = { new: 'New', bestseller: 'Best seller', featured: 'Featured' };
 
-export function Badges({ product }) {
+export function Badges({ product, max = 2 }) {
   if (!product.badges.length) return null;
   return (
     <ul className="badges" aria-label="Labels">
-      {product.badges.map((b) => (
-        <li key={b} className={`badge${b === 'new' ? ' badge-new' : b === 'featured' ? ' badge-gold' : ''}`}>
+      {product.badges.slice(0, max).map((b) => (
+        <li key={b} className={`tag${b === 'new' ? ' tag-dark' : b === 'featured' ? ' tag-gold' : ''}`}>
           {BADGE_TEXT[b]}
         </li>
       ))}
@@ -22,57 +22,67 @@ export function Badges({ product }) {
   );
 }
 
+export function RenderNote({ product }) {
+  if (product.imagery !== 'render') return null;
+  return <span className="render-note">Concept render</span>;
+}
+
 /**
- * Product card. Variants:
- *  - "standard": image on top (shop grid, rows)
- *  - "wide": image beside the details (editorial rows on wide screens)
+ * Product card: large 4:5 image, quiet details below. The second image (if
+ * any) fades in on hover for a quick look at another angle.
  */
-function ProductCard({ product, variant = 'standard', sizes, onQuickView, headingLevel = 3 }) {
+function ProductCard({ product, sizes = '(max-width: 640px) 92vw, (max-width: 1100px) 45vw, 30vw', onQuickView, headingLevel = 3 }) {
   const [colourId, setColourId] = useState(product.colours[0].id);
   const { add } = useBagActions();
   const colour = product.colours.find((c) => c.id === colourId);
   const href = `/products/${product.id}?colour=${colourId}`;
   const Heading = `h${headingLevel}`;
   const preorder = product.availability === 'preorder';
+  const altKey = colour.images[1];
 
   return (
-    <article className={`product-card product-card-${variant}`} aria-labelledby={`card-${product.id}`}>
-      <div className="product-card-media" data-tone={colour.tone}>
+    <article className="card" aria-labelledby={`card-${product.id}`}>
+      <div className="card-media">
+        <Link to={href} className="card-media-link" tabIndex={-1} aria-hidden="true">
+          <ProductImage product={product} colour={colour} sizes={sizes} className="card-img" />
+          {altKey && (
+            <ProductImage product={product} colour={colour} imageKey={altKey} sizes={sizes} className="card-img card-img-alt" alt="" />
+          )}
+        </Link>
         <Badges product={product} />
-        <ProductImage product={product} colour={colour} sizes={sizes} />
+        <RenderNote product={product} />
         {onQuickView && (
-          <button type="button" className="quick-view-button" onClick={() => onQuickView(product, colourId)}>
-            <Icon name="eye" size={18} />
+          <button type="button" className="card-quick" onClick={() => onQuickView(product, colourId)}>
+            <Icon name="eye" size={16} />
             Quick view<span className="sr-only"> of {product.name}</span>
           </button>
         )}
       </div>
-      <div className="product-card-body">
-        <p className="product-card-cat">{getCategory(product.category).name}</p>
-        <Heading id={`card-${product.id}`} className="product-card-name">
-          <Link to={href}>{product.name}</Link>
-        </Heading>
-        <p className="product-card-desc">{product.short}</p>
-        <Swatches product={product} value={colourId} onChange={setColourId} size="sm" hideLegend={variant === 'standard'} />
-        <div className="product-card-foot">
-          <div>
-            <p className="price">
-              {formatPrice(product.price)} <span className="price-note">demo</span>
-            </p>
-            <p className={`availability availability-${product.availability}`}>{AVAILABILITY[product.availability]}</p>
-          </div>
-          <div className="product-card-actions">
-            <Link className="btn btn-ghost btn-sm" to={href}>
-              Details<span className="sr-only"> of {product.name}</span>
-            </Link>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => add(product.id, colourId, 1)}>
-              {preorder ? 'Pre-order' : 'Add to bag'}
-              <span className="sr-only">
-                : {product.name}, {colour.name}
-              </span>
-            </button>
-          </div>
+      <div className="card-body">
+        <div className="card-title-row">
+          <Heading id={`card-${product.id}`} className="card-name">
+            <Link to={href}>{product.name}</Link>
+          </Heading>
+          <p className="price">{formatPrice(product.price)}</p>
         </div>
+        <p className="card-meta">
+          {getCategory(product.category).name} · {product.short}
+        </p>
+        <div className="card-foot">
+          <Swatches product={product} value={colourId} onChange={setColourId} size="sm" hideLegend />
+          <button
+            type="button"
+            className="card-add"
+            onClick={() => add(product.id, colourId, 1)}
+            aria-label={`${preorder ? 'Pre-order' : 'Add to bag'}: ${product.name}, ${colour.name}`}
+          >
+            <Icon name="plus" size={18} />
+            <span aria-hidden="true">{preorder ? 'Pre-order' : 'Add'}</span>
+          </button>
+        </div>
+        <p className="card-availability">
+          {AVAILABILITY[product.availability]} · <span className="price-note">demo price</span>
+        </p>
       </div>
     </article>
   );

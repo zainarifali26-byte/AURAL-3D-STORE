@@ -327,21 +327,30 @@ function buildBud(m, mats, track, { internals, side }) {
   return { group, parts, setExplode };
 }
 
-export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) {
-  const body = new THREE.MeshStandardMaterial({
-    color: finish.body,
-    roughness: model.roughness,
-    metalness: model.metalness,
+// Physically based shell material: a clear lacquer coat over the base colour
+// reads as real polished plastic; matte finishes get a faint coat for depth.
+function shellMaterial(color, roughness, metalness) {
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    roughness,
+    metalness,
+    clearcoat: roughness < 0.35 ? 1 : 0.25,
+    clearcoatRoughness: roughness < 0.35 ? 0.06 : 0.4,
+    specularIntensity: 0.6,
   });
+}
+
+export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) {
+  const body = shellMaterial(finish.body, model.roughness, model.metalness);
   const bodyDouble = body.clone();
   bodyDouble.side = THREE.DoubleSide;
 
-  const caseMat = new THREE.MeshStandardMaterial({
-    color: finish.case ?? finish.body,
-    roughness: model.caseRoughness ?? model.roughness,
-    metalness: model.caseMetalness ?? model.metalness,
-    side: THREE.DoubleSide,
-  });
+  const caseMat = shellMaterial(
+    finish.case ?? finish.body,
+    model.caseRoughness ?? model.roughness,
+    model.caseMetalness ?? model.metalness,
+  );
+  caseMat.side = THREE.DoubleSide;
   const lid = model.lidMetal
     ? new THREE.MeshStandardMaterial({ color: finish.lid ?? finish.accent, roughness: 0.24, metalness: 1, side: THREE.DoubleSide })
     : caseMat;
@@ -357,7 +366,16 @@ export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) 
     inner,
     well: new THREE.MeshStandardMaterial({ color: '#050608', roughness: 0.5, metalness: 0.4 }),
     accent: new THREE.MeshStandardMaterial({ color: finish.accent, roughness: 0.2, metalness: 1 }),
-    tip: new THREE.MeshStandardMaterial({ color: finish.tip, roughness: 0.85, metalness: 0, side: THREE.DoubleSide }),
+    // Silicone ear tips: soft sheen rather than a hard specular.
+    tip: new THREE.MeshPhysicalMaterial({
+      color: finish.tip,
+      roughness: 0.7,
+      metalness: 0,
+      sheen: 0.6,
+      sheenRoughness: 0.5,
+      sheenColor: new THREE.Color(finish.tip).lerp(new THREE.Color('#ffffff'), 0.3),
+      side: THREE.DoubleSide,
+    }),
     led: new THREE.MeshBasicMaterial({ color: '#b8d8ff' }),
     pcb: new THREE.MeshStandardMaterial({ color: '#12352f', roughness: 0.6, metalness: 0.3 }),
     chip: new THREE.MeshStandardMaterial({ color: '#15171c', roughness: 0.35, metalness: 0.6 }),

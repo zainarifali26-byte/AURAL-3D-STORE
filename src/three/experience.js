@@ -238,7 +238,15 @@ export function createExperience({
     if (!show) return;
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const offset = Math.min(height * (portrait ? 0.09 : 0.13), 120);
+    // On the narrowest phones two inner-part labels would collide; the copy
+    // below the stage still names every part.
+    const narrow = width < 400;
     for (const l of labels) {
+      const hidden = narrow && (l.key === 'pcb' || l.key === 'battery');
+      l.el.style.display = hidden ? 'none' : '';
+      l.line.style.display = hidden ? 'none' : '';
+      l.dot.style.display = hidden ? 'none' : '';
+      if (hidden) continue;
       v.copy(l.anchor);
       l.part.localToWorld(v);
       v.project(camera);

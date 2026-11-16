@@ -1,153 +1,166 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Story from '../story/Story.jsx';
 import ProductCard from '../components/ProductCard.jsx';
-import ProductImage from '../components/ProductImage.jsx';
+import { AssetImage } from '../components/ProductImage.jsx';
+import SplitText from '../components/SplitText.jsx';
+import TechDiagram from '../components/TechDiagram.jsx';
 import Icon from '../components/Icon.jsx';
 import { products, getProduct, CATEGORIES } from '../data/products.js';
-import { features } from '../data/features.js';
+import { PHOTO_ASSETS, renderAsset } from '../data/assets.js';
 import { brand, formatPrice } from '../config/brand.js';
+import { useScrollMotion, prefersReducedMotion } from '../lib/motion.js';
+import { gsap, ScrollTrigger } from '../lib/gsap.js';
 import usePageMeta from '../hooks/usePageMeta.js';
 
-const proX = getProduct('pro-x');
-const studio = getProduct('studio');
-const newArrivals = products.filter((p) => p.badges.includes('new')).sort((a, b) => b.released - a.released);
-const bestSellers = products.filter((p) => p.badges.includes('bestseller'));
+const A = PHOTO_ASSETS;
 
-const CATEGORY_LOOK = {
-  earbuds: { product: 'air', colour: 'ice', tone: 'ice' },
-  sport: { product: 'sport', colour: 'mint', tone: 'mint' },
-  headphones: { product: 'studio', colour: 'teal', tone: 'teal' },
-};
+// ---- Hero: a switcher across the three photographed products ----------
+const HERO = [
+  {
+    id: 'pro-x',
+    eyebrow: 'AURAL Pro X · True wireless',
+    title: 'Quiet, by design.',
+    text: 'Adaptive noise cancellation in a soft-matte black shell, finished with a single rose-gold grille.',
+    asset: A['pro-x-hero'],
+    cutout: true,
+  },
+  {
+    id: 'studio',
+    eyebrow: 'AURAL Studio · Over-ear',
+    title: 'Room to breathe.',
+    text: 'Deep, rounded cushions and adaptive noise cancellation for long, unhurried listening.',
+    asset: A['studio-front'],
+  },
+  {
+    id: 'one',
+    eyebrow: 'AURAL One · On-ear',
+    title: 'Light all day.',
+    text: 'A soft pearl frame that folds flat into its case, made for study, travel and everything between.',
+    asset: A['one-front'],
+  },
+];
 
-function Technology() {
+function Hero() {
+  const [index, setIndex] = useState(0);
+  const slide = HERO[index];
+  const product = getProduct(slide.id);
+  const root = useRef(null);
+
+  // Entrance: the stage wipes open, then the copy rises.
+  useEffect(() => {
+    if (prefersReducedMotion()) return undefined;
+    const ctx = gsap.context(() => {
+      gsap
+        .timeline({ defaults: { ease: 'power4.out' } })
+        .from('.hero-stage', { clipPath: 'inset(12% 8% 12% 8% round 10px)', duration: 1.4, ease: 'power4.inOut' })
+        .from('.hero-slide.is-active img', { scale: 1.12, duration: 1.8 }, 0)
+        .from('.hero-copy > *', { y: 30, autoAlpha: 0, duration: 1, stagger: 0.08 }, 0.35)
+        .from('.hero-switch', { autoAlpha: 0, y: 12, duration: 0.8 }, 0.9);
+      // The product drifts slightly as the hero scrolls away.
+      gsap.to('.hero-stage-inner', {
+        yPercent: 8,
+        ease: 'none',
+        scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true },
+      });
+    }, root);
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="technology" className="section tech" aria-labelledby="tech-title">
-      <div className="container">
-        <div className="section-head">
-          <p className="eyebrow">Technology</p>
-          <h2 id="tech-title" className="section-title">
-            Ten things your earbuds should do well.
-          </h2>
-          <p className="section-lead">
-            The feature categories across the AURAL range, explained plainly. Each tile lists the demo models that
-            include it. Descriptions are illustrative, not measured specifications.
+    <section className="hero" ref={root} aria-labelledby="hero-title">
+      <div className="hero-grid container">
+        <div className="hero-copy" aria-live="polite">
+          <p className="eyebrow">{slide.eyebrow}</p>
+          <h1 id="hero-title" className="display hero-title">
+            {slide.title}
+          </h1>
+          <p className="lead">{slide.text}</p>
+          <div className="hero-actions">
+            <Link className="btn btn-primary" to={`/products/${product.id}`}>
+              Shop {product.name.replace('AURAL ', '')}
+              <Icon name="arrow" size={18} />
+            </Link>
+            <Link className="btn btn-secondary" to="/#technology">
+              Explore technology
+            </Link>
+          </div>
+          <p className="hero-meta">
+            <span className="price">{formatPrice(product.price)}</span>
+            <span className="price-note">demo price</span>
+            <span className="hero-meta-sep" aria-hidden="true" />
+            <span className="dot" style={{ '--swatch': product.colours[0].hex }} aria-hidden="true" />
+            {product.colours[0].name}
           </p>
         </div>
-        <ul className="tech-grid">
-          {features.map((f) => (
-            <li key={f.id} className={`tech-tile${f.size ? ` tech-${f.size}` : ''}`}>
-              {f.size === 'xl' && (
-                <div className="tech-media" aria-hidden="true">
-                  <img
-                    src="/products/pro-x-onyx-gold-buds-1200.webp"
-                    srcSet="/products/pro-x-onyx-gold-buds-600.webp 600w, /products/pro-x-onyx-gold-buds-1200.webp 1200w"
-                    sizes="(max-width: 760px) 90vw, 40vw"
-                    alt=""
-                    width="1200"
-                    height="1000"
-                    loading="lazy"
-                  />
-                </div>
-              )}
-              <span className="tech-icon">
-                <Icon name={f.icon} size={22} />
-              </span>
-              <h3>{f.title}</h3>
-              <p>{f.body}</p>
-              <p className="tech-models">
-                <span className="sr-only">Available on: </span>
-                {f.models.length === products.length ? 'All models' : f.models.join(' · ')}
-              </p>
-            </li>
-          ))}
-        </ul>
+
+        <div className="hero-stage studio-backdrop">
+          <div className="hero-stage-inner">
+            {HERO.map((s, i) => (
+              <div key={s.id} className={`hero-slide${i === index ? ' is-active' : ''}${s.cutout ? ' is-cutout' : ''}`} aria-hidden={i !== index}>
+                <AssetImage asset={s.asset} cutout={s.cutout} sizes="(max-width: 960px) 92vw, 52vw" eager={i === 0} alt={i === index ? s.asset.alt : ''} />
+              </div>
+            ))}
+          </div>
+          <div className="hero-switch" role="group" aria-label="Featured product">
+            {HERO.map((s, i) => (
+              <button key={s.id} type="button" aria-pressed={i === index} onClick={() => setIndex(i)}>
+                <span className="hero-switch-index">0{i + 1}</span>
+                {getProduct(s.id).name.replace('AURAL ', '')}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+      <ul className="hero-strip container" aria-label="Across the range">
+        <li>Adaptive noise cancellation</li>
+        <li>Multipoint pairing</li>
+        <li>Wireless charging</li>
+        <li>Concept range · demo store</li>
+      </ul>
     </section>
   );
 }
 
-function Featured() {
-  const colour = proX.colours[0];
+// ---- Categories -----------------------------------------------------------
+function Categories() {
+  const sport = getProduct('sport');
+  const look = {
+    earbuds: { asset: A['pro-x-wide'], cls: 'cat-xl' },
+    headphones: { asset: A['one-upright'], cls: 'cat-tall' },
+    sport: { asset: renderAsset(sport, sport.colours[0], 'hero'), cls: 'cat-tall', render: true },
+  };
   return (
-    <article className="featured on-dark" aria-labelledby="featured-title">
-      <div className="featured-media">
-        <ProductImage product={proX} colour={colour} view="hero" sizes="(max-width: 900px) 92vw, 55vw" />
-      </div>
-      <div className="featured-body">
-        <p className="eyebrow">Featured · Flagship concept</p>
-        <h3 id="featured-title" className="featured-title">
-          {proX.name}
-        </h3>
-        <p className="featured-text">{proX.description}</p>
-        <ul className="featured-points">
-          {proX.features.slice(0, 3).map((f) => (
-            <li key={f}>
-              <Icon name="check" size={16} />
-              {f}
-            </li>
-          ))}
-        </ul>
-        <p className="featured-price">
-          {formatPrice(proX.price)} <span className="price-note">demo price</span>
-        </p>
-        <div className="featured-actions">
-          <Link className="btn btn-primary" to={`/products/${proX.id}`}>
-            Shop {proX.name}
-          </Link>
-          <Link className="btn btn-ghost" to="/compare">
-            Compare models
-          </Link>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function Collection() {
-  return (
-    <section id="collection" className="section collection" aria-labelledby="collection-title">
+    <section className="section categories" aria-labelledby="cat-title">
       <div className="container">
         <div className="section-head-row">
           <div className="section-head">
-            <p className="eyebrow">The collection</p>
-            <h2 id="collection-title" className="section-title">
-              Eight ways to listen.
-            </h2>
-            <p className="section-lead">
-              True wireless, sport and over-ear concepts in one design language. All products and prices are demo
-              information.
+            <p className="eyebrow" data-reveal="">
+              Collections
             </p>
+            <SplitText id="cat-title" className="section-title" text="Three ways to listen." />
           </div>
-          <Link className="btn btn-ghost" to="/shop">
-            Shop all {products.length}
-            <Icon name="arrow" size={18} />
-          </Link>
+          <p className="lead" data-reveal="">
+            True wireless for every day, sport for movement, over-ear for when you want the world to fall away.
+          </p>
         </div>
-
-        <Featured />
-
-        <ul className="category-grid" aria-label="Shop by category">
+        <ul className="cat-grid">
           {CATEGORIES.map((c) => {
-            const look = CATEGORY_LOOK[c.id];
-            const p = getProduct(look.product);
-            const count = products.filter((x) => x.category === c.id).length;
+            const l = look[c.id];
+            const count = products.filter((p) => p.category === c.id).length;
             return (
-              <li key={c.id}>
-                <Link to={`/shop?category=${c.id}`} className="category-tile" data-tone={look.tone}>
-                  <span className="category-text">
-                    <span className="category-name">{c.name}</span>
-                    <span className="category-meta">
-                      {c.blurb} {count} {count === 1 ? 'model' : 'models'}.
+              <li key={c.id} className={l.cls}>
+                <Link to={`/shop?category=${c.id}`} className="cat-tile">
+                  <div className="cat-media studio-backdrop" data-reveal="mask">
+                    <AssetImage asset={l.asset} alt="" sizes="(max-width: 960px) 92vw, 50vw" />
+                  </div>
+                  <div className="cat-text">
+                    <span className="cat-name">{c.name}</span>
+                    <span className="cat-meta">
+                      {count} {count === 1 ? 'model' : 'models'}
+                      {l.render ? ' · concept render' : ''}
                     </span>
-                  </span>
-                  <img
-                    src={`/products/${p.id}-${look.colour}-hero-600.webp`}
-                    alt=""
-                    width="600"
-                    height="500"
-                    loading="lazy"
-                  />
-                  <span className="category-arrow" aria-hidden="true">
+                  </div>
+                  <span className="cat-arrow" aria-hidden="true">
                     <Icon name="arrow" size={18} />
                   </span>
                 </Link>
@@ -155,129 +168,240 @@ function Collection() {
             );
           })}
         </ul>
-
-        <div className="row-head">
-          <h3 className="row-title">New arrivals</h3>
-          <Link className="text-link" to="/shop?sort=newest">
-            See newest
-          </Link>
-        </div>
-        <ul className="card-row" aria-label="New arrivals">
-          {newArrivals.map((p) => (
-            <li key={p.id}>
-              <ProductCard product={p} sizes="(max-width: 760px) 80vw, 30vw" headingLevel={4} />
-            </li>
-          ))}
-        </ul>
-
-        <div className="row-head">
-          <h3 className="row-title">Best sellers</h3>
-          <p className="fineprint">Demo label, not based on real sales.</p>
-        </div>
-        <ol className="bestsellers">
-          {bestSellers.map((p, i) => {
-            const colour = p.colours[0];
-            return (
-              <li key={p.id} className="bestseller">
-                <span className="bestseller-rank" aria-hidden="true">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <div className="bestseller-media" data-tone={colour.tone}>
-                  <ProductImage product={p} colour={colour} sizes="(max-width: 760px) 40vw, 220px" />
-                </div>
-                <div className="bestseller-body">
-                  <h4 className="bestseller-name">
-                    <Link to={`/products/${p.id}`}>{p.name}</Link>
-                  </h4>
-                  <p>{p.tagline}</p>
-                </div>
-                <p className="price bestseller-price">{formatPrice(p.price)}</p>
-              </li>
-            );
-          })}
-        </ol>
       </div>
     </section>
   );
 }
 
-function BrandStory() {
+// ---- Featured products ----------------------------------------------------
+function Featured() {
+  const picks = ['pro-x', 'studio', 'one', 'pulse'].map(getProduct);
   return (
-    <section id="story" className="section brand-story" aria-labelledby="brand-title">
-      <div className="container brand-grid">
-        <div className="brand-intro">
-          <p className="eyebrow">About {brand.name}</p>
-          <h2 id="brand-title" className="brand-statement">
-            We design for the moment the music starts and everything else goes quiet.
-          </h2>
-        </div>
-        <div className="brand-copy">
-          <p className="section-lead">
-            {brand.name} is a design concept for everyday listening: headphones and earbuds that look considered, feel
-            light and get out of the way. This store is a frontend demo. There is no factory, no back catalogue and no
-            awards to show you, only the products and the ideas behind them.
-          </p>
-          <Link className="text-link" to="/about">
-            Read about the concept
+    <section className="section featured" aria-labelledby="featured-title">
+      <div className="container">
+        <div className="section-head-row">
+          <div className="section-head">
+            <p className="eyebrow" data-reveal="">
+              Featured
+            </p>
+            <SplitText id="featured-title" className="section-title" text="Made to be lived with." />
+          </div>
+          <Link className="btn btn-secondary" to="/shop" data-reveal="">
+            Shop all {products.length}
             <Icon name="arrow" size={18} />
           </Link>
         </div>
-        <ul className="brand-pillars">
-          <li>
-            <h3>Audio</h3>
-            <p>Tuned for detail and voices, at volumes that are kind to your ears.</p>
-          </li>
-          <li>
-            <h3>Design</h3>
-            <p>A small set of shapes, finishes and colours, used the same way everywhere.</p>
-          </li>
-          <li>
-            <h3>Technology</h3>
-            <p>Features that earn their place, explained without jargon.</p>
-          </li>
-          <li>
-            <h3>Everyday</h3>
-            <p>Made for commutes, desks, runs and long flights, not for a lab.</p>
-          </li>
+        <ul className="featured-row">
+          {picks.map((p, i) => (
+            <li key={p.id} data-reveal="" data-delay={i * 0.08}>
+              <ProductCard product={p} sizes="(max-width: 760px) 78vw, (max-width: 1200px) 45vw, 24vw" />
+            </li>
+          ))}
         </ul>
-        <div className="brand-images" aria-hidden="true">
-          <div className="brand-img brand-img-a" data-tone="teal">
-            <img src="/products/studio-teal-side-600.webp" alt="" width="600" height="500" loading="lazy" />
+      </div>
+    </section>
+  );
+}
+
+// ---- Technology: pinned visual, chapters scroll past -----------------------
+const CHAPTERS = [
+  {
+    id: 'anc',
+    title: 'Active noise cancellation',
+    text: 'Microphones listen to the room and the earbuds play the opposite signal, so engines and air-conditioning fall away. Adaptive ANC is part of the Pro X and Studio demo specifications.',
+    asset: A['studio-front'],
+  },
+  {
+    id: 'sound',
+    title: 'Sound quality',
+    text: 'A balanced tuning that keeps voices clear and detail intact at sensible volumes, instead of chasing loudness.',
+    asset: A['one-cup'],
+  },
+  {
+    id: 'battery',
+    title: 'Battery performance',
+    text: 'From a full working day in the earbuds to several days in the over-ear models, with quick top-ups in the case. Figures are illustrative demo values.',
+    asset: A['pro-x-pair'],
+  },
+  {
+    id: 'connect',
+    title: 'Connectivity',
+    text: 'Current Bluetooth on every model, and multipoint on the flagships, so a call on your phone does not end the music on your laptop.',
+    asset: A['pro-x-hero'],
+  },
+  {
+    id: 'fit',
+    title: 'Comfort and fit',
+    text: 'Several ear-tip sizes for a proper seal, and soft protein-leather cushions on the over-ear models. A good fit does most of the work.',
+    asset: A['one-cushion'],
+  },
+  {
+    id: 'mic',
+    title: 'Microphone technology',
+    text: 'Microphones placed toward your mouth pick up your voice ahead of the street around you. Call quality is a demo claim, not a measurement.',
+    asset: A['studio-hand'],
+  },
+];
+
+function Technology() {
+  const [active, setActive] = useState(0);
+  const root = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.utils.toArray('.tech-chapter', root.current).forEach((el, i) => {
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 55%',
+          end: 'bottom 55%',
+          onToggle: (self) => self.isActive && setActive(i),
+        });
+      });
+    }, root);
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <section id="technology" className="tech on-dark" ref={root} aria-labelledby="tech-title">
+      <div className="container">
+        <div className="section-head tech-head">
+          <p className="eyebrow" data-reveal="">
+            Technology
+          </p>
+          <SplitText id="tech-title" className="section-title" text="The quiet engineering inside." />
+          <p className="lead" data-reveal="">
+            Six things good headphones get right, explained plainly. Diagrams are illustrative; specifications are demo
+            information.
+          </p>
+        </div>
+
+        <div className="tech-layout">
+          <div className="tech-stage" aria-hidden="true">
+            <div className="tech-stage-media studio-backdrop">
+              {CHAPTERS.map((c, i) => (
+                <div key={c.id} className={`tech-shot${i === active ? ' is-active' : ''}`}>
+                  <AssetImage asset={c.asset} alt="" sizes="(max-width: 960px) 1px, 46vw" />
+                </div>
+              ))}
+            </div>
+            <div className="tech-stage-diagram">
+              {CHAPTERS.map((c, i) => (
+                <div key={c.id} className={`tech-diagram${i === active ? ' is-active' : ''}`}>
+                  <TechDiagram type={c.id} active={i === active} />
+                </div>
+              ))}
+            </div>
+            <ol className="tech-progress">
+              {CHAPTERS.map((c, i) => (
+                <li key={c.id} className={i === active ? 'is-active' : undefined} />
+              ))}
+            </ol>
           </div>
-          <div className="brand-img brand-img-b" data-tone="mint">
-            <img src="/products/air-mint-hero-600.webp" alt="" width="600" height="500" loading="lazy" />
-          </div>
+
+          <ol className="tech-chapters">
+            {CHAPTERS.map((c, i) => (
+              <li key={c.id} className={`tech-chapter${i === active ? ' is-active' : ''}`}>
+                <div className="tech-inline studio-backdrop" aria-hidden="true">
+                  <AssetImage asset={c.asset} alt="" sizes="(max-width: 960px) 92vw, 1px" />
+                </div>
+                <div className="tech-inline-diagram" aria-hidden="true">
+                  <TechDiagram type={c.id} active />
+                </div>
+                <span className="tech-num">0{i + 1}</span>
+                <h3>{c.title}</h3>
+                <p>{c.text}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>
   );
 }
 
-function FinalCta() {
-  const colour = studio.colours[0];
+// ---- Brand story ------------------------------------------------------------
+function BrandStory() {
   return (
-    <section className="final-cta" aria-labelledby="final-title">
-      <p className="final-word" aria-hidden="true">
-        LISTEN
-      </p>
-      <div className="container final-grid">
-        <div className="final-copy">
-          <p className="eyebrow">Find your pair</p>
-          <h2 id="final-title" className="section-title">
-            From pocket-sized to full-size.
-          </h2>
-          <p className="section-lead">Compare all eight concepts side by side, or start with the one you like the look of.</p>
-          <div className="final-actions">
-            <Link className="btn btn-primary" to="/shop">
-              Shop now
+    <section className="section story" aria-labelledby="story-title">
+      <div className="container story-grid">
+        <div className="story-media-main" data-reveal="mask">
+          <div className="parallax-frame">
+            <img
+              data-parallax="6"
+              src="/images/photos/life-comfort-1600.webp"
+              srcSet="/images/photos/life-comfort-800.webp 800w, /images/photos/life-comfort-1600.webp 1600w"
+              sizes="(max-width: 960px) 92vw, 46vw"
+              alt="Woman wearing white over-ear headphones, smiling"
+              width="1600"
+              height="2000"
+              loading="lazy"
+            />
+          </div>
+        </div>
+        <div className="story-copy">
+          <p className="eyebrow" data-reveal="">
+            About {brand.name}
+          </p>
+          <SplitText id="story-title" className="section-title" text="Designed to disappear." />
+          <p className="lead" data-reveal="">
+            The best headphones are the ones you stop noticing. {brand.name} is a design concept built around that idea:
+            fewer shapes, honest materials, and technology that earns its place.
+          </p>
+          <ul className="story-principles">
+            <li data-reveal="">
+              <span>01</span>
+              <h3>Audio first</h3>
+              <p>Clear voices and real detail at comfortable volumes.</p>
+            </li>
+            <li data-reveal="" data-delay="0.08">
+              <span>02</span>
+              <h3>Considered materials</h3>
+              <p>Soft-matte shells, protein leather and a touch of champagne metal.</p>
+            </li>
+            <li data-reveal="" data-delay="0.16">
+              <span>03</span>
+              <h3>Said plainly</h3>
+              <p>No invented numbers. Where a spec appears, it is marked as demo.</p>
+            </li>
+          </ul>
+          <Link className="text-link" to="/about" data-reveal="">
+            Read about the concept <Icon name="arrow" size={16} />
+          </Link>
+        </div>
+        <div className="story-media-small" data-reveal="mask">
+          <AssetImage asset={A['life-portrait']} sizes="(max-width: 960px) 60vw, 22vw" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---- Closing call to action -----------------------------------------------
+function FinalCta() {
+  return (
+    <section className="cta on-dark" aria-labelledby="cta-title">
+      <div className="container cta-grid">
+        <div className="cta-copy">
+          <p className="eyebrow" data-reveal="">
+            Find your pair
+          </p>
+          <SplitText id="cta-title" className="display cta-title" text="Choose your quiet." />
+          <p className="lead" data-reveal="">
+            Eight concepts, from pocket-sized to full-size. Compare them side by side or start with the one you like the
+            look of.
+          </p>
+          <div className="hero-actions" data-reveal="">
+            <Link className="btn btn-light" to="/shop">
+              Shop all products
+              <Icon name="arrow" size={18} />
             </Link>
-            <Link className="btn btn-ghost" to="/compare">
+            <Link className="btn btn-ghost-light" to="/compare">
               Compare models
             </Link>
           </div>
         </div>
-        <div className="final-media">
-          <ProductImage product={studio} colour={colour} sizes="(max-width: 900px) 90vw, 50vw" />
+        <div className="cta-media studio-backdrop" data-reveal="mask">
+          <AssetImage asset={A['studio-wide']} sizes="(max-width: 960px) 92vw, 56vw" />
         </div>
       </div>
     </section>
@@ -286,16 +410,19 @@ function FinalCta() {
 
 export default function Home() {
   usePageMeta(
-    `${brand.name} | ${brand.tagline}`,
-    'AURAL is a fictional premium headphones and earbuds concept: a cinematic 3D product story and a demo store with eight illustrative products.',
+    `${brand.name} | Headphones and earbuds, quietly refined`,
+    'AURAL is a premium headphones and earbuds concept and frontend demo store: real product photography, eight demo products and illustrative specifications.',
   );
+  const root = useRef(null);
+  useScrollMotion(root);
   return (
-    <>
-      <Story />
+    <div ref={root}>
+      <Hero />
+      <Categories />
+      <Featured />
       <Technology />
-      <Collection />
       <BrandStory />
       <FinalCta />
-    </>
+    </div>
   );
 }

@@ -60,7 +60,7 @@ export default function ComparePage() {
               <td className="compare-corner" />
               {columns.map((p, i) => (
                 <th key={p.id} scope="col" className={i === 2 ? 'compare-third' : undefined}>
-                  <div className="compare-img" data-tone={p.colours[0].tone}>
+                  <div className="compare-img">
                     <ProductImage product={p} colour={p.colours[0]} sizes="(max-width: 760px) 40vw, 25vw" />
                   </div>
                   <Link className="compare-name" to={`/products/${p.id}`}>

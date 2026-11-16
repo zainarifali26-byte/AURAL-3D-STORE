@@ -2,9 +2,11 @@
 // supply real contact details, shipping terms, returns terms and legal text.
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import ProductImage from '../components/ProductImage.jsx';
+import { AssetImage } from '../components/ProductImage.jsx';
 import { brand } from '../config/brand.js';
-import { getProduct } from '../data/products.js';
+import { products } from '../data/products.js';
+import { PHOTO_ASSETS, assetSrc } from '../data/assets.js';
+import { PHOTO_SOURCES, PHOTOGRAPHERS, PEXELS_LICENSE, photoPage } from '../data/credits.js';
 import usePageMeta from '../hooks/usePageMeta.js';
 
 function InfoLayout({ eyebrow, title, lead, children, aside }) {
@@ -35,8 +37,6 @@ function Placeholder({ children }) {
 
 export function AboutPage() {
   usePageMeta('About AURAL', 'AURAL is a fictional headphones and earbuds concept and a frontend demo store.');
-  const proX = getProduct('pro-x');
-  const one = getProduct('one');
   return (
     <InfoLayout
       eyebrow="About"
@@ -44,20 +44,21 @@ export function AboutPage() {
       lead={`${brand.name} is a design exercise: what would a headphones and earbuds brand look like if the product story, the store and the products were designed together?`}
       aside={
         <div className="about-images">
-          <div className="about-img" data-tone="dark">
-            <ProductImage product={proX} colour={proX.colours[0]} sizes="(max-width: 900px) 90vw, 30vw" />
+          <div className="about-img">
+            <AssetImage asset={PHOTO_ASSETS['life-portrait']} sizes="(max-width: 900px) 90vw, 30vw" />
           </div>
-          <div className="about-img" data-tone="mint">
-            <ProductImage product={one} colour={one.colours[0]} sizes="(max-width: 900px) 90vw, 30vw" />
+          <div className="about-img studio-backdrop">
+            <AssetImage asset={PHOTO_ASSETS['pro-x-pair']} sizes="(max-width: 900px) 90vw, 30vw" />
           </div>
         </div>
       }
     >
       <h2>What AURAL is</h2>
       <p>
-        {brand.name} is a fictional brand. The eight products in this store are concepts: their shapes, colours and
-        features were designed for this site, and every image is an original 3D render of those concepts. Prices,
-        availability and specifications are illustrative.
+        {brand.name} is a fictional brand. The eight products in this store are concepts with illustrative prices,
+        availability and specifications. Three are shown with licensed stock photography of unbranded stand-in
+        products; the other five are shown as concept renders until photography exists. See the{' '}
+        <Link to="/credits">image credits</Link>.
       </p>
       <h2>What we care about</h2>
       <ul>
@@ -65,8 +66,8 @@ export function AboutPage() {
           <strong>Audio first.</strong> Clear voices and detail at comfortable volumes.
         </li>
         <li>
-          <strong>Restraint in design.</strong> A small family of shapes and finishes: ice, mint, navy, black and a touch
-          of champagne gold.
+          <strong>Restraint in design.</strong> A small family of finishes: onyx, pearl, stone, sage, forest and a touch of
+          champagne metal.
         </li>
         <li>
           <strong>Honest technology.</strong> Features explained plainly, never dressed up as measurements.
@@ -80,6 +81,52 @@ export function AboutPage() {
       <Link className="btn btn-primary" to="/shop">
         Explore the products
       </Link>
+    </InfoLayout>
+  );
+}
+
+export function CreditsPage() {
+  usePageMeta('Image credits', 'Sources and licences for the photography used in the AURAL demo store.');
+  const used = Object.values(PHOTO_ASSETS).reduce((map, a) => {
+    (map[a.pexels] ??= []).push(a);
+    return map;
+  }, {});
+  const renderProducts = products.filter((p) => p.imagery === 'render');
+  return (
+    <InfoLayout
+      eyebrow="Credits"
+      title="Image credits"
+      lead="Where every image on this site comes from, and under which licence."
+    >
+      <h2>Photography</h2>
+      <p>
+        All photographs are from Pexels and used under the <a href={PEXELS_LICENSE}>Pexels License</a>: free for
+        commercial and non-commercial use, modification allowed, attribution not required (given here anyway). Each
+        photo was checked for visible logos. The products shown are unbranded stand-ins for this fictional concept;
+        AURAL did not make them. Photos were cropped and placed on a consistent studio backdrop.
+      </p>
+      <ul className="credit-list">
+        {Object.entries(used).map(([id, assets]) => {
+          const src = PHOTO_SOURCES[id];
+          const by = PHOTOGRAPHERS[src.by];
+          return (
+            <li key={id} className="credit">
+              <img src={assetSrc(assets[0], 'small')} alt="" width="80" height={assets[0].kind && assets[0].w === 1800 ? 50 : 100} loading="lazy" />
+              <span>
+                <a href={photoPage(id)}>{src.title}</a> by <a href={by.profile}>{by.name}</a> on Pexels
+                <br />
+                <span className="fineprint">Used as: {assets.map((a) => a.id).join(', ')}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <h2>Concept renders</h2>
+      <p>
+        {renderProducts.map((p) => p.name).join(', ')} are shown as concept renders created for this site from procedural
+        3D models (three.js). They are labelled “Concept render” wherever they appear and should be replaced with real
+        product photography before any commercial use.
+      </p>
     </InfoLayout>
   );
 }

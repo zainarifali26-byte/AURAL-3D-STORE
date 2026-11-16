@@ -1,8 +1,8 @@
 # AURAL — premium headphones & earbuds concept store (frontend demo)
 
-A cinematic, scroll-driven 3D product story and a complete frontend demo store for **AURAL**, a fictional
-headphones and earbuds concept. AURAL is a temporary demo name, not a registered or established brand. Every product,
-price, availability state and specification is illustrative. Nothing can be purchased.
+A premium audio e-commerce frontend for **AURAL**, a fictional headphones and earbuds concept: editorial home page,
+scroll-driven storytelling, a complete demo shop and an honest asset pipeline. AURAL is a temporary demo name, not a
+registered brand. Products, prices, availability and specifications are illustrative; nothing can be purchased.
 
 ## Run it
 
@@ -14,87 +14,89 @@ npm run build      # production build in dist/
 npm run preview    # serve the build locally
 ```
 
-`npm run render:products` re-renders the product images (`public/products`, 1200 and 600 px WebP) and the story
-fallback stills (`public/story`) from the 3D models with headless Chrome. Run it after changing models, colours or the
-catalogue. Arguments: `products`, `story`, or `products <id>` for one product. Needs local Chrome/Edge (or `CHROME_PATH`).
-
 ## Stack
 
-React 19, React Router 7, Vite, Three.js, GSAP + ScrollTrigger. Fonts (Sora, Manrope) are self-hosted via Fontsource.
-No other runtime dependencies, no analytics, no cookies, no third-party scripts.
+React 19, React Router 7, Vite, GSAP + ScrollTrigger. Manrope is self-hosted (Fontsource). No other runtime
+dependencies, no analytics, no cookies, no third-party scripts. three.js is a **dev-only** dependency used by the
+offline render script.
 
 ## Routes
 
-`/` home · `/shop` · `/products/:id` · `/compare` · `/bag` · `/checkout` · `/about` · `/contact` · `/faq` ·
-`/shipping` · `/returns` · `/privacy` · `/terms` · anything else → 404. Store and info pages are lazy-loaded chunks.
+`/` · `/shop` · `/products/:id` · `/compare` · `/bag` · `/checkout` · `/about` · `/contact` · `/faq` · `/shipping` ·
+`/returns` · `/privacy` · `/terms` · `/credits` · anything else → 404. All routes except home are lazy-loaded.
 
 ## Structure
 
 ```
 src/
-  config/brand.js        name, tagline, placeholders (contact, socials), siteUrl for canonical tags ← rebrand here
-  data/products.js       the 8 demo products (single source for shop, home, product pages, compare, bag)
-  data/features.js       technology feature tiles; "available on" is derived from the catalogue
-  story/timeline.js      story state + the one GSAP timeline (10 scenes, light → navy → light)
-  story/copy.js          story text per scene
-  story/Story.jsx        sticky stage, ScrollTrigger, overlays, nav tone, progress/skip, fallbacks
-  three/model.js         procedural earbuds + case (bean / stem / fin styles, metal lids, display case)
-  three/headphones.js    procedural over-ear headphones
-  three/pose.js          docking poses shared by the model and the timeline (no three.js import)
-  three/experience.js    renderer, camera framing, render-on-demand loop, labels, adaptive quality
-  three/effects.js       sound, voice and noise rings; water droplets
-  three/studio.js        procedural studio environment (+ a bright "light tent" for chrome)
+  config/brand.js        name, copy, placeholders, siteUrl for canonical tags   ← rebrand here
+  data/products.js       the 8 demo products (single source for every page)
+  data/assets.js         central image registry: photos + concept renders, srcset helpers
+  data/credits.js        photographer and licence data for every photo
+  lib/motion.js          GSAP ScrollTrigger reveals, masks, split headlines, parallax (off under reduced motion)
+  lib/gsap.js            registers GSAP plugins once
+  pages/                 Home, Shop, Product, Compare, Bag, Checkout, InfoPages (+ Credits), NotFound
+  components/            Nav, SearchDialog, Footer, ProductCard, ProductImage, QuickView, BagDrawer, TechDiagram…
   state/bag.jsx          bag reducer (add, quantity, colour change, remove, clear) + localStorage
-  pages/                 Home, Shop, Product, Compare, Bag, Checkout, InfoPages, NotFound
-  components/            Nav, Footer, BagDrawer, BagLines, ProductCard, ProductImage, QuickView, Swatches…
-  render/main.js         dev-only offline renderer used by the render script (not in the build)
-  styles/                base.css (design system), story.css, store.css
+  styles/                base.css (design system), home.css, store.css
+  three/, render/        procedural models + offline renderer for concept renders (dev only)
+scripts/
+  photo-manifest.mjs     which Pexels photos are used, crops and processing mode
+  process-photos.mjs     crops, keys backdrops, bakes the studio backdrop, exports WebP (1600/800)
+  render-products.mjs    renders the concept-render products onto the same backdrop
+  backdrop.js            the shared "studio pearl" backdrop
+public/images/photos     processed photography      public/images/renders   concept renders
 ```
 
 ## Design system
 
-Light by default: paper `#F7FAFA`, ice `#C9E8F4`, sky `#A9D4E5`, mint `#BDE5D7`; deep navy `#071B35` and teal `#174D4B`
-for cinematic moments; champagne gold `#C8A76B` as a sparing accent (`#7F6128` when used as text on light, for AA
-contrast). Tokens live at the top of `src/styles/base.css`. Product renders are transparent; each colour has a `tone`
-(`ice`, `mint`, `cream`, `navy`, `teal`, `dark`) that sets its backdrop through `[data-tone]`.
+Tokens at the top of `src/styles/base.css`: warm ivory `#F6F3EE`, pearl `#FBFAF7`, studio `#EFEBE5`, silver,
+champagne `#C2A46D` (text variant `#7A5F2E` for AA), sage, forest `#1E3A2F`, charcoal `#18191B`. One typeface
+(Manrope) with a fluid type scale, a 4 px spacing scale, small radii, two shadows and shared easing/durations.
+Dark sections are used sparingly (technology in forest, closing CTA and footer in charcoal).
 
-## How the story works
+## Product imagery — read this
 
-- The home page opens on a tall section with a `position: sticky` stage. One ScrollTrigger scrubs one GSAP timeline
-  across it; scrolling up reverses everything. No pinning, no scroll-jacking.
-- Scenes: hero → intro (light) → open → separate → rotate → acoustics (exploded view with labels) → voice (mic) →
-  noise cancellation → power → durability → final (light). The stage background, nav colours and the chapter rail follow
-  each scene's tone.
-- The timeline tweens a plain state object. The 3D stage reads it every frame and draws only when it changed or an
-  ambient effect runs (capped ~30 fps). It pauses off-screen and in background tabs, caps the pixel ratio at 1.5 and
-  lowers it when frames are slow. Three.js loads as a separate lazy chunk.
-- Phones: each scene gets a shorter scroll distance, copy sits below the product, and a "Skip the story" control and a
-  progress bar stay visible. Camera framing adapts to the aspect ratio.
-- **No WebGL** or lost context: pre-rendered stills crossfade on the same timeline.
-- **Reduced motion**: a calm stacked page of stills and text, no scroll animation.
+- **Photography (Pro X, One, Studio):** licensed stock photos from Pexels (Pexels License, free for commercial use).
+  Every photo was checked for visible logos; the products are **unbranded stand-ins** for this fictional concept.
+  Full credits are on `/credits` and in `src/data/credits.js`.
+- **Concept renders (Air, Pulse, Neo, Sport, Mini):** no legitimately reusable, unbranded photography was found for
+  these designs (free stock photos of earbuds overwhelmingly show identifiable brands such as Apple, Nothing, Amazon,
+  Bang & Olufsen, JBL, Jabra, OPPO and Philips). They are shown as clearly labelled concept renders.
+- All images share one 4:5 frame and one baked studio backdrop, so a product looks identical everywhere.
 
-## Product imagery
+To replace an image: process a new photo with `scripts/process-photos.mjs` (add it to the manifest), then point the
+colour's `images` list in `src/data/products.js` at the new key in `PHOTO_ASSETS`.
 
-All product images are original renders of the procedural AURAL models. Supplied reference photos of real branded
-products were used only as art direction, not as product images. To use real photography later, add
-`images: { hero: '/path.webp', ... }` to a colour in `src/data/products.js`; `productImage()` prefers it.
+```bash
+# originals are not committed; download the Pexels originals listed in scripts/photo-manifest.mjs, then:
+node scripts/process-photos.mjs <folder with <pexelsId>.jpg files>
+npm run render:products          # concept renders (needs local Chrome/Edge)
+```
+
+## Motion
+
+- Hero: stage wipes open, copy rises, product switcher crossfades between the three photographed products,
+  subtle parallax as the hero scrolls away.
+- Sections: masked image reveals, word-by-word headline reveals, fade-ups, parallax on editorial photos.
+- Technology: a pinned (sticky) stage on desktop whose photo and animated SVG diagram change as each chapter scrolls
+  past; stacked chapters with inline diagrams on mobile.
+- Cards: second image on hover, quick view; navigation hides on scroll down and returns on scroll up.
+- `prefers-reduced-motion`: no GSAP animation runs and all content is visible immediately.
 
 ## Simulated, not real
 
-- Products, prices, availability, badges ("best seller", "new") and specifications are demo data.
-- Checkout validates a delivery form but never asks for payment, places no order and stores nothing; the confirmation
-  says so. The bag lives in this browser's localStorage only.
-- The contact form is not connected and says nothing was sent.
-- Contact details, social links, shipping, returns, privacy and terms are labelled placeholders.
+Products, prices, availability, badges and specifications are demo data. Checkout validates a delivery form but never
+asks for payment, places no order and stores nothing. The contact form is not connected. Contact details, social links,
+shipping, returns, privacy and terms are labelled placeholders.
 
-## Before a real launch (needs owner input)
+## Before a real launch
 
-Real business and contact details · payment provider · shipping and returns terms · privacy policy and terms of sale ·
-real product photography and verified specifications · a domain (then set `brand.siteUrl` for canonical/og tags) ·
-`robots.txt`, `sitemap.xml` and an og:image · hosting with an SPA fallback (e.g. Netlify `/* /index.html 200`).
+Real product photography and verified specifications · business and contact details · payment provider · shipping,
+returns, privacy and terms · a domain (set `brand.siteUrl`) · `robots.txt`, `sitemap.xml`, og:image · hosting with an
+SPA fallback (e.g. Netlify `/* /index.html 200`).
 
-## SEO limitations
+## SEO note
 
-This is a client-rendered SPA. Titles, descriptions and Open Graph tags are set per route at runtime, which Google
-renders, but social previews and crawlers that do not run JavaScript see only the defaults in `index.html`.
-Pre-rendering or server rendering would be needed for full per-page previews.
+Client-rendered SPA: titles, descriptions and Open Graph tags are set per route at runtime (Google renders them), but
+crawlers that do not run JavaScript only see the defaults in `index.html`. Pre-rendering would fix that.

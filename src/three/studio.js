@@ -12,18 +12,31 @@ function panel(scene, geo, color, intensity, position, rotation = [0, 0, 0]) {
   return mat;
 }
 
-export function createStudioEnvironment(renderer) {
+/**
+ * @param {{ bright?: boolean }} options  bright: a pale "light tent" used only
+ *   for mirror-polished metal, so chrome reads as chrome instead of black.
+ */
+export function createStudioEnvironment(renderer, { bright = false } = {}) {
   const scene = new THREE.Scene();
   const box = new THREE.BoxGeometry(1, 1, 1);
   const materials = [];
 
   const room = new THREE.Mesh(
     new THREE.BoxGeometry(24, 24, 24),
-    new THREE.MeshBasicMaterial({ color: '#05070a', side: THREE.BackSide }),
+    new THREE.MeshBasicMaterial({ color: bright ? '#8d9caa' : '#2b333d', side: THREE.BackSide }),
   );
   scene.add(room);
 
   const add = (...args) => materials.push(panel(scene, box, ...args));
+  // Dark floor so polished surfaces keep a horizon line.
+  add('#07090c', 1, [0, -6, 0]);
+  scene.children.at(-1).scale.set(24, 0.2, 24);
+  // Pale ice-blue sweep behind the camera, for chrome and gloss finishes:
+  // bright above, softer below, like a studio light tent.
+  add('#dbeef6', 1.3, [0, 3, 10]);
+  scene.children.at(-1).scale.set(20, 7, 0.2);
+  add('#9fb4c2', 0.8, [0, -3.5, 10]);
+  scene.children.at(-1).scale.set(20, 6, 0.2);
   // Key soft box overhead, slightly forward.
   add('#ffffff', 7, [0, 7, 2], [0, 0, 0]);
   scene.children.at(-1).scale.set(7, 0.2, 4.5);

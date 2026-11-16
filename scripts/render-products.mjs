@@ -1,16 +1,20 @@
-// Renders the product images (public/products) and the story stills
-// (public/story) from the procedural 3D model, using headless Chrome.
+// Renders the product images (public/products, 1200 and 600 px wide) and the
+// story stills (public/story) from the procedural 3D models, using headless
+// Chrome.
 //
-//   npm run render:products
+//   npm run render:products            # everything
+//   npm run render:products products   # product images only
+//   npm run render:products story      # story stills only
+//   npm run render:products products pro-x   # one product
 //
 // Needs a local Chrome or Edge. Set CHROME_PATH to override the location.
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readdir, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { products, VIEWS } from '../src/data/products.js';
+import { products, viewsFor } from '../src/data/products.js';
 import { SCENES } from '../src/story/timeline.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,7 +33,7 @@ if (!executablePath) {
   process.exit(1);
 }
 
-const only = process.argv[2]; // optional: "products" or "story"
+const [only, onlyProduct] = process.argv.slice(2);
 
 const server = await createServer({ root, logLevel: 'error', server: { port: 5199, strictPort: false } });
 await server.listen();
@@ -55,27 +59,35 @@ try {
   if (only !== 'story') {
     const dir = path.join(root, 'public', 'products');
     await mkdir(dir, { recursive: true });
+    if (!onlyProduct) {
+      // Remove images from earlier catalogue versions.
+      for (const f of await readdir(dir)) await unlink(path.join(dir, f));
+    }
+    let count = 0;
     for (const p of products) {
+      if (onlyProduct && p.id !== onlyProduct) continue;
       for (const c of p.colours) {
-        for (const view of VIEWS) {
-          const data = await page.evaluate((a, b, v) => window.__aural.product(a, b, v), p.id, c.id, view);
-          const file = path.join(dir, `${p.id}-${c.id}-${view}.webp`);
-          await writeDataUrl(file, data);
-          console.log('wrote', path.relative(root, file));
+        for (const view of viewsFor(p)) {
+          const [full, half] = await page.evaluate((a, b, v) => window.__aural.product(a, b, v), p.id, c.id, view);
+          await writeDataUrl(path.join(dir, `${p.id}-${c.id}-${view}-1200.webp`), full);
+          await writeDataUrl(path.join(dir, `${p.id}-${c.id}-${view}-600.webp`), half);
+          count += 2;
         }
       }
+      console.log('rendered', p.id);
     }
+    console.log(`${count} product images`);
   }
 
   if (only !== 'products') {
     const dir = path.join(root, 'public', 'story');
     await mkdir(dir, { recursive: true });
+    for (const f of await readdir(dir)) await unlink(path.join(dir, f));
     for (const key of ['hero', ...SCENES.map((s) => s.key)]) {
       const data = await page.evaluate((k) => window.__aural.scene(k), key);
-      const file = path.join(dir, `scene-${key}.webp`);
-      await writeDataUrl(file, data);
-      console.log('wrote', path.relative(root, file));
+      await writeDataUrl(path.join(dir, `scene-${key}.webp`), data);
     }
+    console.log('story stills rendered');
   }
 } finally {
   await browser.close();

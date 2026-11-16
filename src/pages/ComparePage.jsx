@@ -1,26 +1,30 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { products, compareRows, productImage } from '../data/products.js';
+import ProductImage from '../components/ProductImage.jsx';
+import { products, compareRows, getProduct } from '../data/products.js';
 import { useBagActions } from '../state/bag.jsx';
 import { brand, formatPrice } from '../config/brand.js';
-import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import usePageMeta from '../hooks/usePageMeta.js';
 
-// Wide screens show all four columns. Narrow screens show the two models
-// picked in the selectors (other columns get `is-off`).
+const DEFAULT = ['pro-x', 'air', 'studio'];
+
+// Up to three models side by side (two on phones). Every value comes from
+// the same catalogue as the product pages.
 export default function ComparePage() {
-  useDocumentTitle(`Compare models | ${brand.name} demo store`);
-  const [pair, setPair] = useState(['pro', 'air']);
+  usePageMeta('Compare models', 'Compare the AURAL demo headphones and earbuds side by side. All specifications are illustrative.');
+  const [picked, setPicked] = useState(DEFAULT);
   const { add } = useBagActions();
 
   const pick = (slot, id) =>
-    setPair((prev) => {
+    setPicked((prev) => {
       const next = [...prev];
-      if (next[1 - slot] === id) next[1 - slot] = prev[slot]; // swap instead of duplicating
+      const existing = next.indexOf(id);
+      if (existing !== -1 && existing !== slot) next[existing] = prev[slot]; // swap instead of duplicating
       next[slot] = id;
       return next;
     });
 
-  const off = (id) => (pair.includes(id) ? '' : ' is-off');
+  const columns = picked.map(getProduct);
 
   return (
     <div className="compare-page">
@@ -29,16 +33,16 @@ export default function ComparePage() {
           <p className="eyebrow">Compare</p>
           <h1 className="page-title">Find your pair.</h1>
           <p className="section-lead">
-            All four concepts side by side. Every value is a demo specification taken from the same catalogue as the
-            product pages.
+            Choose up to three models. Every value is a demo specification from the same catalogue as the product pages,
+            not a verified manufacturer specification.
           </p>
         </header>
 
         <div className="compare-pickers">
-          {[0, 1].map((slot) => (
-            <label key={slot} className="field">
-              <span>Model {slot + 1}</span>
-              <select value={pair[slot]} onChange={(e) => pick(slot, e.target.value)}>
+          {picked.map((id, slot) => (
+            <label key={slot} className={`field${slot === 2 ? ' compare-third' : ''}`}>
+              <span className="field-label">Model {slot + 1}</span>
+              <select className="select" value={id} onChange={(e) => pick(slot, e.target.value)}>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -50,59 +54,59 @@ export default function ComparePage() {
         </div>
 
         <table className="compare-table">
-          <caption className="sr-only">Demo specifications of the four {brand.name} concepts</caption>
+          <caption className="sr-only">Demo specifications of the selected {brand.name} models</caption>
           <thead>
             <tr>
-              <td />
-              {products.map((p) => (
-                <th key={p.id} scope="col" className={`compare-product${off(p.id)}`}>
-                  <img src={productImage(p.id, p.colours[0].id, 'set')} alt="" width="1000" height="800" loading="lazy" />
-                  <span className="compare-name">{p.name}</span>
-                  <span className="compare-role">{p.role}</span>
+              <td className="compare-corner" />
+              {columns.map((p, i) => (
+                <th key={p.id} scope="col" className={i === 2 ? 'compare-third' : undefined}>
+                  <div className="compare-img" data-tone={p.colours[0].tone}>
+                    <ProductImage product={p} colour={p.colours[0]} sizes="(max-width: 760px) 40vw, 25vw" />
+                  </div>
+                  <Link className="compare-name" to={`/products/${p.id}`}>
+                    {p.name}
+                  </Link>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <th scope="row">Demo price</th>
+              {columns.map((p, i) => (
+                <td key={p.id} className={`compare-price${i === 2 ? ' compare-third' : ''}`}>
+                  {formatPrice(p.price)}
+                </td>
+              ))}
+            </tr>
             {compareRows.map((r) => (
               <tr key={r.key}>
                 <th scope="row">{r.label}</th>
-                {products.map((p) => (
-                  <td key={p.id} className={off(p.id).trim() || undefined}>
-                    {p.specs[r.key]}
+                {columns.map((p, i) => (
+                  <td key={p.id} className={i === 2 ? 'compare-third' : undefined}>
+                    {r.get ? r.get(p) : p.specs[r.key]}
                   </td>
                 ))}
               </tr>
             ))}
             <tr>
               <th scope="row">Colours</th>
-              {products.map((p) => (
-                <td key={p.id} className={off(p.id).trim() || undefined}>
+              {columns.map((p, i) => (
+                <td key={p.id} className={i === 2 ? 'compare-third' : undefined}>
                   <span className="compare-swatches">
                     {p.colours.map((c) => (
                       <span key={c.id} className="dot" style={{ '--swatch': c.hex }} title={c.name} />
                     ))}
                   </span>
-                  <span className="sr-only">{p.colours.map((c) => c.name).join(', ')}</span>
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <th scope="row">Demo price</th>
-              {products.map((p) => (
-                <td key={p.id} className={`compare-price${off(p.id)}`}>
-                  {formatPrice(p.price)}
+                  <span className="compare-colour-names">{p.colours.map((c) => c.name).join(', ')}</span>
                 </td>
               ))}
             </tr>
             <tr className="compare-actions">
               <td />
-              {products.map((p) => (
-                <td key={p.id} className={off(p.id).trim() || undefined}>
-                  <Link className="btn btn-ghost btn-sm" to={`/products/${p.id}`}>
-                    Details<span className="sr-only"> of {p.name}</span>
-                  </Link>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={() => add(p.id, p.colours[0].id, 1)}>
+              {columns.map((p, i) => (
+                <td key={p.id} className={i === 2 ? 'compare-third' : undefined}>
+                  <button type="button" className="btn btn-primary btn-sm btn-block" onClick={() => add(p.id, p.colours[0].id, 1)}>
                     Add to bag
                     <span className="sr-only">
                       : {p.name} in {p.colours[0].name}

@@ -14,8 +14,17 @@ const FOV = 30;
 const LID_OPEN = 1.95; // radians
 // Where each exploded-view label sits: side 1 = above, -1 = below; level
 // staggers neighbours so labels never collide on narrow screens.
-const LABEL_SIDE = { shell: 1, pcb: -1, mic: 1, battery: -1, driver: 1, housing: -1, tip: 1 };
-const LABEL_LEVEL = { shell: 1, pcb: 1, mic: 1.6, battery: 1.6, driver: 1.6, housing: 1, tip: 1 };
+const LABELS = {
+  bean: {
+    side: { shell: 1, pcb: -1, mic: 1, battery: -1, driver: 1, housing: -1, tip: 1 },
+    level: { shell: 1, pcb: 1, mic: 1.6, battery: 1.6, driver: 1.6, housing: 1, tip: 1 },
+  },
+  // Stem earbuds: the stem and microphone hang below, everything else above.
+  stem: {
+    side: { shell: 1, pcb: 1, battery: 1, driver: 1, tip: 1, housing: -1, stem: -1, mic: -1 },
+    level: { shell: 1, pcb: 1.6, battery: 1, driver: 1.6, tip: 1, housing: 1, stem: 0.7, mic: 0.9 },
+  },
+};
 
 function baseDistance(aspect) {
   const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
@@ -81,6 +90,7 @@ export function createExperience({
 
   // ---- Exploded-view labels (DOM + SVG leader lines) ----
   const labels = [];
+  const labelSet = set.buds[0].parts.stem ? LABELS.stem : LABELS.bean;
   let svg = null;
   if (labelsEl) {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -147,9 +157,11 @@ export function createExperience({
 
   // ---- Per-frame state application ----
   const v = new THREE.Vector3();
-  const centres = [new THREE.Vector3(), new THREE.Vector3()];
+  const centres = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const micPart = set.buds[0].parts.mic ?? set.buds[0].parts.shell;
   const ledBase = new THREE.Color('#b8d8ff');
   let lastGlow = -1;
+  let lastTone = -1;
 
   const applyState = (time) => {
     const portrait = isPortrait(width, height);
@@ -200,6 +212,7 @@ export function createExperience({
 
     set.buds[0].group.getWorldPosition(centres[0]);
     set.buds[1].group.getWorldPosition(centres[1]);
+    micPart.getWorldPosition(centres[2]);
     waves.update(time, S, centres, camera);
     drops.update(time, S.drops);
 
@@ -208,6 +221,11 @@ export function createExperience({
       if (glow !== lastGlow) {
         bgEl.style.setProperty('--glow', glow);
         lastGlow = glow;
+      }
+      const tone = Math.round(S.tone * 1000) / 1000;
+      if (tone !== lastTone) {
+        bgEl.style.setProperty('--tone', tone);
+        lastTone = tone;
       }
     }
   };
@@ -226,9 +244,12 @@ export function createExperience({
       v.project(camera);
       const x = (v.x * 0.5 + 0.5) * width;
       const y = (-v.y * 0.5 + 0.5) * height;
-      const side = LABEL_SIDE[l.key] ?? 1;
+      const side = labelSet.side[l.key] ?? 1;
       // Keep labels clear of the navigation bar and the bottom edge.
-      const ly = Math.min(Math.max(y - side * offset * (LABEL_LEVEL[l.key] ?? 1), 96), height - 40);
+      const level = labelSet.level[l.key] ?? 1;
+      // When clamped at the top, low-level labels sit one row lower so neighbours stay apart.
+      const minY = (portrait ? 140 : 96) + (side > 0 && level < 1.3 ? 30 : 0);
+      const ly = Math.min(Math.max(y - side * offset * level, minY), height - 40);
       l.el.style.transform = `translate(${x.toFixed(1)}px, ${ly.toFixed(1)}px) translate(-50%, ${side > 0 ? '-100%' : '0'})`;
       l.line.setAttribute('x1', x.toFixed(1));
       l.line.setAttribute('y1', y.toFixed(1));
@@ -255,7 +276,7 @@ export function createExperience({
   let lastTick = 0;
 
   const ambient = () =>
-    S.float > 0.002 || S.waves > 0.002 || S.anc > 0.002 || S.drops > 0.002 || S.led > 0.002;
+    S.float > 0.002 || S.waves > 0.002 || S.voice > 0.002 || S.anc > 0.002 || S.drops > 0.002 || S.led > 0.002;
 
   const tick = (now) => {
     raf = 0;

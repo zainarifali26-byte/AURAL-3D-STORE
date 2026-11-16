@@ -1,63 +1,75 @@
 ﻿// The product story as data: one state object `S` and one GSAP timeline that
-// tweens it. Time units are arbitrary "beats"; ScrollTrigger maps the whole
-// timeline onto the story section's scroll distance.
+// tweens it. Time units are "beats"; ScrollTrigger maps the whole timeline
+// onto the story section's scroll distance (shorter per beat on phones).
 import { gsap } from 'gsap';
+import { dockPose } from '../three/pose.js';
 
-const DOCK = 0.56;
 const TAU = Math.PI * 2;
-const DOWN = -Math.PI / 2; // nozzle down, faceplate up (resting in the case)
 
+// `tone`: background of the stage while the scene's copy is shown.
 export const SCENES = [
-  { key: 'reveal', time: 0 },
-  { key: 'rotate', time: 2.4 },
-  { key: 'explode', time: 4.8 },
-  { key: 'sound', time: 8.2 },
-  { key: 'anc', time: 10.4 },
-  { key: 'battery', time: 12.6 },
-  { key: 'water', time: 15 },
-  { key: 'final', time: 17.2 },
+  { key: 'intro', time: 0, tone: 'light' },
+  { key: 'open', time: 2.2, tone: 'dark' },
+  { key: 'separate', time: 4.2, tone: 'dark' },
+  { key: 'rotate', time: 6.4, tone: 'dark' },
+  { key: 'acoustic', time: 8.6, tone: 'dark' },
+  { key: 'mic', time: 11.6, tone: 'dark' },
+  { key: 'anc', time: 13.6, tone: 'dark' },
+  { key: 'battery', time: 15.8, tone: 'dark' },
+  { key: 'water', time: 18.2, tone: 'dark' },
+  { key: 'final', time: 20.4, tone: 'light' },
 ];
-export const TOTAL = 19.2;
+export const TOTAL = 22.8;
 
 // The moment in each scene where its copy is fully on screen. Used for nav
-// anchors, the progress rail and the offline scene renders.
+// anchors, the chapter rail and the offline scene renders.
 export const SCENE_FOCUS = {
   hero: 0,
-  reveal: 1.7,
-  rotate: 3.7,
-  explode: 6.7,
-  sound: 9.6,
-  anc: 11.9,
-  battery: 14.6,
-  water: 16.6,
-  final: 18.9,
+  intro: 1.6,
+  open: 3.7,
+  separate: 5.8,
+  rotate: 7.8,
+  acoustic: 10.7,
+  mic: 13.0,
+  anc: 15.2,
+  battery: 17.7,
+  water: 19.8,
+  final: 22.4,
 };
 
-export function createStoryState() {
+export function createStoryState(model) {
   return {
     version: 0,
     intro: 1,
     float: 1,
-    cam: { az: 0, el: 0.3, dist: 1.05, tx: 0, ty: 0.1, tz: 0, side: 0, lift: -0.9 },
+    tone: 0,
+    cam: { az: 0, el: 0.28, dist: 1.05, tx: 0, ty: 0.15, tz: 0, side: 0.85, lift: -1.2 },
     rig: { ry: -0.55, y: 0 },
     case: { x: 0, y: 0, z: 0, s: 1 },
     lid: 0,
-    b0: { x: -DOCK, y: 0.02, z: 0, rx: DOWN, ry: 0, rz: 0 },
-    b1: { x: DOCK, y: 0.02, z: 0, rx: DOWN, ry: 0, rz: 0 },
+    b0: { ...dockPose(model, -1) },
+    b1: { ...dockPose(model, 1) },
     explode: 0,
     labels: 0,
     waves: 0,
+    voice: 0,
     anc: 0,
     calm: 0,
     led: 0,
     drops: 0,
-    glow: 0.35,
-    env: 0.85,
+    glow: 0.3,
+    env: 1,
     exposure: 1,
   };
 }
 
-export function buildSceneTimeline(S) {
+export function buildSceneTimeline(S, model) {
+  const stem = model.budStyle === 'stem';
+  const d0 = dockPose(model, -1);
+  const d1 = dockPose(model, 1);
+  // A floating, slightly forward-tilted pose that suits the bud style.
+  const floatRx = stem ? 0.1 : -0.35;
+
   const tl = gsap.timeline({
     paused: true,
     defaults: { ease: 'power2.inOut' },
@@ -67,92 +79,104 @@ export function buildSceneTimeline(S) {
   });
   for (const scene of SCENES) tl.addLabel(scene.key, scene.time);
 
-  // 1 â€” Reveal: camera moves in, lid opens, earbuds rise.
-  tl.to(S, { float: 0, duration: 0.8 }, 0)
-    .to(S.cam, { dist: 0.9, el: 0.22, ty: 0.55, duration: 2.2 }, 0)
-    .to(S.cam, { side: 1, lift: 1, duration: 1 }, 0.4)
-    .to(S.rig, { ry: 0.25, duration: 2.4 }, 0)
-    .to(S, { lid: 1, duration: 1 }, 0.1)
-    .to(S.b0, { x: -0.7, y: 1.25, rx: -1.15, duration: 1.1 }, 0.6)
-    .to(S.b1, { x: 0.7, y: 1.25, rx: -1.15, duration: 1.1 }, 0.6)
-    .to(S, { env: 1.1, glow: 0.55, duration: 2 }, 0.2);
+  // 1 — Intro (light): the set turns to show its metal lid.
+  tl.to(S, { float: 0.4, duration: 1 }, 0)
+    .to(S.rig, { ry: 0.5, duration: 2 }, 0)
+    .to(S.cam, { dist: 0.92, el: 0.24, ty: 0.1, duration: 2 }, 0)
+    .to(S.cam, { side: 1, lift: 0.85, duration: 1.1 }, 0.2)
+    .to(S, { env: 1.15, duration: 2 }, 0);
 
-  // 2 â€” Form: case drops away, earbuds turn a full revolution with the scroll.
-  tl.to(S.case, { y: -3.4, s: 0.8, duration: 1.2 }, 2.4)
-    .to(S.rig, { ry: 0, duration: 1 }, 2.4)
-    .to(S.b0, { x: -0.62, y: 1.0, rx: -0.35, duration: 1.2 }, 2.4)
-    .to(S.b1, { x: 0.62, y: 1.0, rx: -0.35, duration: 1.2 }, 2.4)
-    .to([S.b0, S.b1], { ry: TAU, duration: 2.4, ease: 'power1.inOut' }, 2.4)
-    .to(S.cam, { az: 0.5, el: 0.06, ty: 0.85, dist: 0.62, duration: 1.2 }, 2.4)
-    .to(S.cam, { az: -0.25, duration: 1.2 }, 3.6)
-    .to(S.cam, { side: -1, duration: 0.8 }, 2.0)
-    .to(S, { env: 1.45, exposure: 1.08, duration: 1.2 }, 2.4)
-    .to(S, { exposure: 1, duration: 1.2 }, 3.6);
+  // 2 — Open (to dark): the stage dims, the lid opens.
+  tl.to(S, { tone: 1, float: 0, glow: 0.5, duration: 1.2 }, 2.0)
+    .to(S, { lid: 1, duration: 1.1 }, 2.6)
+    .to(S.rig, { ry: 0.15, duration: 2 }, 2.2)
+    .to(S.cam, { dist: 0.94, el: 0.3, ty: 0.3, duration: 2 }, 2.2)
+    .to(S.cam, { side: -1, duration: 0.9 }, 2.0);
 
-  // 3 â€” Inside: one earbud centres and separates into layers, then rebuilds.
-  tl.to(S.case, { y: -3.6, duration: 1 }, 4.8)
-    .to(S.b1, { x: 6, y: 1.5, z: -3, duration: 1 }, 4.8)
-    // x offset: the exploded stack extends further on the ear-tip side.
-    .to(S.b0, { x: 0.3, y: 1.0, rx: 0.12, ry: TAU + Math.PI / 2 - 0.3, duration: 1 }, 4.8)
-    .to(S.cam, { az: 0, el: 0.1, ty: 1.0, dist: 0.66, duration: 1 }, 4.8)
-    .to(S.cam, { side: 0.3, duration: 0.8 }, 4.4)
-    .to(S, { explode: 1, duration: 1 }, 5.6)
-    .to(S, { labels: 1, duration: 0.4, ease: 'power1.out' }, 6.3)
-    .to(S, { labels: 0, duration: 0.3, ease: 'power1.in' }, 7.3)
-    .to(S, { explode: 0, duration: 0.8 }, 7.4)
-    .to(S, { env: 1, glow: 0.25, duration: 1 }, 4.8);
+  // 3 — Separate: the earbuds lift out and part.
+  tl.to(S.b0, { x: -0.72, y: 1.3, z: 0.1, rx: floatRx, ry: 0.55, duration: 1.4 }, 4.3)
+    .to(S.b1, { x: 0.72, y: 1.2, z: 0.1, rx: floatRx, ry: -0.55, duration: 1.4 }, 4.3)
+    .to(S.cam, { ty: 0.62, el: 0.16, dist: 0.95, duration: 1.6 }, 4.2)
+    .to(S.cam, { side: 1, duration: 0.9 }, 4.0)
+    .to(S, { waves: 0.55, duration: 0.6 }, 5.2)
+    .to(S, { waves: 0, duration: 0.5 }, 6.1);
 
-  // 4 â€” Sound: both earbuds face you, rings of sound expand from them.
-  tl.to(S.b0, { x: -0.8, y: 1.0, z: 0, rx: 0.3, ry: TAU + 0.8, duration: 1 }, 8.2)
-    .to(S.b1, { x: 0.8, y: 1.0, z: 0, rx: 0.3, ry: TAU - 0.8, duration: 1 }, 8.2)
-    .to(S.cam, { dist: 0.72, duration: 1 }, 8.2)
-    .to(S.cam, { side: 1, duration: 0.8 }, 7.9)
-    .to(S, { waves: 1, duration: 0.6 }, 8.9)
-    .to(S, { glow: 0.75, duration: 0.8 }, 8.9);
+  // 4 — Rotate: the case drops away, the earbuds turn a full revolution.
+  tl.to(S.case, { y: -3.6, s: 0.8, duration: 1.2 }, 6.4)
+    .to(S.rig, { ry: 0, duration: 1 }, 6.4)
+    .to(S.b0, { x: -0.55, y: 1.05, duration: 1.2 }, 6.4)
+    .to(S.b1, { x: 0.55, y: 1.05, duration: 1.2 }, 6.4)
+    .to(S.b0, { ry: 0.55 + TAU, duration: 2.2, ease: 'power1.inOut' }, 6.4)
+    .to(S.b1, { ry: -0.55 + TAU, duration: 2.2, ease: 'power1.inOut' }, 6.4)
+    .to(S.cam, { az: 0.45, el: 0.06, ty: 0.8, dist: 0.74, duration: 1.1 }, 6.4)
+    .to(S.cam, { az: -0.2, duration: 1.1 }, 7.5)
+    .to(S.cam, { side: -1, duration: 0.9 }, 6.1)
+    .to(S, { env: 1.45, exposure: 1.06, duration: 1.1 }, 6.4)
+    .to(S, { exposure: 1, duration: 1.1 }, 7.5);
 
-  // 5 â€” Silence: outside noise moves in and fades at the boundary.
-  tl.to(S, { waves: 0, duration: 0.5 }, 10.2)
-    .to(S, { anc: 1, duration: 0.5 }, 10.5)
-    .to(S, { calm: 1, duration: 0.9 }, 11.2)
-    .to(S.b0, { x: -0.62, duration: 0.8 }, 10.4)
-    .to(S.b1, { x: 0.62, duration: 0.8 }, 10.4)
-    .to(S.cam, { side: -1, duration: 0.8 }, 10.1)
-    .to(S, { glow: 0.08, exposure: 0.92, duration: 0.9 }, 11.2);
+  // 5 — Acoustic design: one earbud separates into layers, then rebuilds.
+  tl.to(S.b1, { x: 6, y: 1.5, z: -3, duration: 1 }, 8.6)
+    .to(S.b0, { x: 0.3, y: 1.05, rx: 0.12, ry: TAU + Math.PI / 2 - 0.3, duration: 1 }, 8.6)
+    .to(S.cam, { az: 0, el: 0.1, ty: 0.9, dist: 0.72, duration: 1 }, 8.6)
+    .to(S.cam, { side: 0.3, duration: 0.9 }, 8.3)
+    .to(S, { explode: 1, duration: 1 }, 9.4)
+    .to(S, { labels: 1, duration: 0.4, ease: 'power1.out' }, 10.1)
+    .to(S, { labels: 0, duration: 0.3, ease: 'power1.in' }, 11.1)
+    .to(S, { explode: 0, duration: 0.7 }, 11.2)
+    .to(S, { env: 1, glow: 0.25, duration: 1 }, 8.6);
 
-  // 6 â€” Power: earbuds return, lid closes, the case turns and charges.
-  tl.to(S, { anc: 0, duration: 0.4 }, 12.5)
-    .set(S, { calm: 0 }, 12.95)
-    .to(S.case, { y: 0, s: 1, duration: 1 }, 12.6)
-    .to(S.b0, { x: -DOCK, y: 1.0, rx: DOWN, ry: TAU, duration: 0.6 }, 12.8)
-    .to(S.b1, { x: DOCK, y: 1.0, rx: DOWN, ry: TAU, duration: 0.6 }, 12.8)
-    .to([S.b0, S.b1], { y: 0.02, duration: 0.5, ease: 'power2.in' }, 13.4)
-    .to(S, { lid: 0, duration: 0.5 }, 13.9)
-    .to(S.cam, { ty: 0.1, dist: 0.82, el: 0.22, duration: 1.2 }, 12.6)
-    .to(S.cam, { side: 1, duration: 0.8 }, 12.4)
-    .to(S.rig, { ry: 0.45, duration: 1.2 }, 12.6)
-    .to(S.rig, { ry: -0.5, duration: 1 }, 13.9)
-    .to(S, { led: 1, duration: 0.3 }, 13.9)
-    .to(S, { glow: 0.4, exposure: 1, duration: 1 }, 12.6);
+  // 6 — Microphone: close on the earbud, voice waves arrive at the mic.
+  tl.to(S.b0, { x: 0, y: 1.05, rx: 0.05, ry: TAU + 0.75, duration: 0.9 }, 11.8)
+    .to(S.cam, { dist: 0.42, ty: stem ? 0.72 : 1.0, el: 0.05, az: 0.1, duration: 1 }, 11.8)
+    .to(S.cam, { side: 1, duration: 0.9 }, 11.6)
+    .to(S, { voice: 1, duration: 0.5 }, 12.4)
+    .to(S, { voice: 0, duration: 0.4 }, 13.4)
+    .to(S, { glow: 0.45, duration: 0.8 }, 12.2);
 
-  // 7 â€” Durability: closer, from above, water beads on the lid.
-  tl.to(S, { led: 0, duration: 0.3 }, 15)
-    .to(S.cam, { el: 0.5, dist: 0.8, ty: 0.1, az: 0.35, duration: 1 }, 15)
-    .to(S.cam, { side: -1, duration: 0.8 }, 14.8)
-    .to(S.rig, { ry: -0.95, duration: 2 }, 15)
-    .to(S, { drops: 1, duration: 0.9 }, 15.4)
-    .to(S, { env: 1.55, duration: 1 }, 15);
+  // 7 — Silence: both earbuds return, outside noise fades at the boundary.
+  tl.to(S.b0, { x: -0.62, y: 1.0, z: 0, rx: floatRx, ry: TAU + 0.55, duration: 1 }, 13.6)
+    .to(S.b1, { x: 0.62, y: 1.0, z: 0, rx: floatRx, ry: TAU - 0.55, duration: 1 }, 13.6)
+    .to(S.cam, { dist: 0.74, ty: 0.85, el: 0.08, az: 0, duration: 1 }, 13.6)
+    .to(S.cam, { side: -1, duration: 0.9 }, 13.4)
+    .to(S, { anc: 1, duration: 0.5 }, 14.2)
+    .to(S, { calm: 1, duration: 0.9 }, 14.8)
+    .to(S, { glow: 0.06, exposure: 0.93, duration: 0.9 }, 14.8);
 
-  // 8 â€” Final: everything together, camera pulls back for the hero shot.
-  tl.to(S, { drops: 0, duration: 0.5 }, 17.1)
-    .to(S, { lid: 1, duration: 0.8 }, 17.4)
-    .to(S.b0, { x: -0.66, y: 0.95, rx: -1.0, ry: TAU + 0.25, duration: 0.9 }, 17.8)
-    .to(S.b1, { x: 0.66, y: 0.95, rx: -1.0, ry: TAU - 0.25, duration: 0.9 }, 17.8)
-    .to(S.cam, { el: 0.18, dist: 1.08, az: 0, ty: 0.45, duration: 1.4 }, 17.2)
-    .to(S.cam, { side: 0, lift: -0.7, duration: 0.8 }, 17.0)
-    .to(S.rig, { ry: -0.35, duration: 1.4 }, 17.2)
-    .to(S, { env: 1.15, glow: 0.5, exposure: 1.05, duration: 1.4 }, 17.2);
+  // 8 — Power: the earbuds go home, the lid closes, the case turns and charges.
+  tl.to(S, { anc: 0, duration: 0.4 }, 15.7)
+    .set(S, { calm: 0 }, 16.15)
+    .to(S.case, { y: 0, s: 1, duration: 1 }, 15.8)
+    .to(S.b0, { x: d0.x, y: 1.2, z: d0.z, rx: d0.rx, ry: TAU, rz: 0, duration: 0.6 }, 16.0)
+    .to(S.b1, { x: d1.x, y: 1.2, z: d1.z, rx: d1.rx, ry: TAU, rz: 0, duration: 0.6 }, 16.0)
+    .to(S.b0, { y: d0.y, duration: 0.5, ease: 'power2.in' }, 16.6)
+    .to(S.b1, { y: d1.y, duration: 0.5, ease: 'power2.in' }, 16.6)
+    .to(S, { lid: 0, duration: 0.5 }, 17.1)
+    .to(S.cam, { ty: 0.1, dist: 0.82, el: 0.24, duration: 1.2 }, 15.8)
+    .to(S.cam, { side: 1, duration: 0.9 }, 15.6)
+    .to(S.rig, { ry: 0.45, duration: 1.2 }, 15.8)
+    .to(S.rig, { ry: -0.5, duration: 1 }, 17.1)
+    .to(S, { led: 1, duration: 0.3 }, 17.1)
+    .to(S, { glow: 0.4, exposure: 1, duration: 1 }, 15.8);
 
-  // Hold the final frame for the last stretch of scroll.
+  // 9 — Durability: closer, from above, water beads on the lid.
+  tl.to(S, { led: 0, duration: 0.3 }, 18.2)
+    .to(S.cam, { el: 0.5, dist: 0.8, ty: 0.1, az: 0.35, duration: 1 }, 18.2)
+    .to(S.cam, { side: -1, duration: 0.9 }, 18.0)
+    .to(S.rig, { ry: -0.95, duration: 2 }, 18.2)
+    .to(S, { drops: 1, duration: 0.9 }, 18.6)
+    .to(S, { env: 1.55, duration: 1 }, 18.2);
+
+  // 10 — Final (back to light): everything together, camera pulls back.
+  tl.to(S, { drops: 0, duration: 0.5 }, 20.3)
+    .to(S, { tone: 0, glow: 0.3, duration: 1.2 }, 20.4)
+    .to(S, { lid: 1, duration: 0.8 }, 20.6)
+    .to(S.b0, { x: -0.62, y: stem ? 1.25 : 0.95, z: 0.1, rx: floatRx, ry: TAU + 0.5, duration: 0.9 }, 21.0)
+    .to(S.b1, { x: 0.62, y: stem ? 1.15 : 0.95, z: 0.1, rx: floatRx, ry: TAU - 0.5, duration: 0.9 }, 21.0)
+    .to(S.cam, { el: 0.2, dist: 1.28, az: 0, ty: 0.55, duration: 1.4 }, 20.4)
+    .to(S.cam, { side: 0, lift: -0.55, duration: 0.9 }, 20.2)
+    .to(S.rig, { ry: -0.4, duration: 1.4 }, 20.4)
+    .to(S, { env: 1.15, exposure: 1.03, duration: 1.4 }, 20.4);
+
   tl.set({}, {}, TOTAL);
   return tl;
 }

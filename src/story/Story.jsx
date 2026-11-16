@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap, ScrollTrigger } from '../lib/gsap.js';
-import { brand } from '../config/brand.js';
+import { brand, formatPrice } from '../config/brand.js';
 import { getProduct } from '../data/products.js';
 import { useReducedMotion, hasWebGL } from '../hooks/useMedia.js';
 import { createStoryState, buildSceneTimeline, SCENES, TOTAL, SCENE_FOCUS } from './timeline.js';
 import { heroCopy, sceneCopy } from './copy.js';
 
-const STORY_PRODUCT = getProduct('pro');
+const STORY_PRODUCT = getProduct('pro-x');
+const STORY_COLOUR = STORY_PRODUCT.colours[0];
 const sceneImage = (key) => `/story/scene-${key}.webp`;
+const toneOf = (key) => (key === 'hero' ? 'light' : (SCENES.find((s) => s.key === key)?.tone ?? 'light'));
 
 /** Top-of-section scroll position (px) for a timeline time. */
 function scrollForTime(section, time) {
@@ -35,39 +37,67 @@ function SceneText({ k, children }) {
   );
 }
 
-function FinalActions() {
+function IntroActions() {
   return (
-    <div className="scene-actions">
-      <a className="btn btn-primary" href="#collection">
-        Choose your {brand.name}
-      </a>
-      <Link className="btn btn-ghost" to="/compare">
-        Compare models
+    <div className="scene-buy">
+      <p className="scene-price">
+        {formatPrice(STORY_PRODUCT.price)} <span className="price-note">demo price</span>
+      </p>
+      <Link className="text-link" to={`/products/${STORY_PRODUCT.id}`}>
+        View {STORY_PRODUCT.name}
       </Link>
     </div>
   );
 }
 
-function HeroText({ animated }) {
+function FinalActions() {
+  return (
+    <div className="scene-actions">
+      <Link className="btn btn-primary" to={`/products/${STORY_PRODUCT.id}`}>
+        Shop {STORY_PRODUCT.name}
+      </Link>
+      <Link className="btn btn-ghost" to="/shop">
+        Browse the collection
+      </Link>
+    </div>
+  );
+}
+
+function ChargeMeter() {
+  return (
+    <div className="charge" aria-hidden="true">
+      <div className="charge-head">
+        <span>Case charge (illustrative)</span>
+        <span className="charge-value">18%</span>
+      </div>
+      <div className="charge-track">
+        <span className="charge-fill" />
+      </div>
+    </div>
+  );
+}
+
+function sceneExtras(key) {
+  if (key === 'intro') return <IntroActions />;
+  if (key === 'battery') return <ChargeMeter />;
+  if (key === 'final') return <FinalActions />;
+  return null;
+}
+
+function HeroText() {
   return (
     <>
-      <p className="hero-brand" aria-hidden="true">
-        {brand.wordmark}
-      </p>
       <p className="eyebrow hero-eyebrow">{heroCopy.eyebrow}</p>
       <h1 className="hero-title">{brand.tagline}</h1>
       <p className="hero-sub">{brand.supporting}</p>
-      {animated && (
-        <div className="hero-cues">
-          <a className="scroll-cue" href="#scene-reveal">
-            <span className="scroll-cue-line" aria-hidden="true" />
-            Scroll to explore
-          </a>
-          <a className="skip-story" href="#collection">
-            Skip to the products
-          </a>
-        </div>
-      )}
+      <div className="hero-actions">
+        <Link className="btn btn-primary" to="/shop">
+          Shop now
+        </Link>
+        <a className="btn btn-ghost" href="#scene-open">
+          Explore the technology
+        </a>
+      </div>
     </>
   );
 }
@@ -79,30 +109,21 @@ function StoryStatic() {
     <section id="discover" className="story-static" aria-label="Product story">
       <div className="static-hero">
         <div className="static-hero-copy">
-          <HeroText animated={false} />
+          <HeroText />
         </div>
         <img
           className="static-img"
           src={sceneImage('hero')}
-          alt={`${STORY_PRODUCT.name} concept: charging case with two earbuds`}
-          width="1400"
+          alt={`${STORY_PRODUCT.name} concept in ${STORY_COLOUR.name}: closed charging case`}
+          width="1600"
           height="1000"
         />
       </div>
-      {SCENES.map(({ key }) => (
-        <article key={key} id={`scene-${key}`} className="static-scene">
-          {key === 'explode' && <span id="technology" className="sr-anchor" aria-hidden="true" />}
-          <img
-            className="static-img"
-            src={sceneImage(key)}
-            alt=""
-            width="1400"
-            height="1000"
-            loading="lazy"
-            decoding="async"
-          />
+      {SCENES.map(({ key, tone }) => (
+        <article key={key} id={`scene-${key}`} className="static-scene" data-mood={tone}>
+          <img className="static-img" src={sceneImage(key)} alt="" width="1600" height="1000" loading="lazy" decoding="async" />
           <div className="static-copy">
-            <SceneText k={key}>{key === 'final' && <FinalActions />}</SceneText>
+            <SceneText k={key}>{key === 'battery' ? null : sceneExtras(key)}</SceneText>
           </div>
         </article>
       ))}
@@ -119,42 +140,55 @@ function StoryAnimated() {
   const labelsRef = useRef(null);
   const bgRef = useRef(null);
   const stateRef = useRef(null);
-  if (!stateRef.current) stateRef.current = createStoryState();
+  if (!stateRef.current) stateRef.current = createStoryState(STORY_PRODUCT.model);
 
   const [webgl] = useState(hasWebGL);
   const [mode, setMode] = useState(webgl ? 'loading' : 'fallback');
   const fallback = mode === 'fallback';
 
-  // Timeline + ScrollTrigger (text, progress rail, fallback stills).
+  // Timeline + ScrollTrigger (text, progress, nav tone, fallback stills).
   useEffect(() => {
     const section = sectionRef.current;
     const S = stateRef.current;
+    const root = document.documentElement;
     const ctx = gsap.context(() => {
       const copies = gsap.utils.toArray('.scene-copy', section);
       const dots = gsap.utils.toArray('.rail-link', section);
+      const progress = section.querySelector('.story-progress');
       let active = -2;
 
       const setActive = (time) => {
-        let index = time < 0.4 ? -1 : -3;
+        let index = time < 0.35 ? -1 : -3;
         SCENES.forEach((s, i) => {
           const end = SCENES[i + 1]?.time ?? TOTAL + 1;
           if (time >= s.time + 0.3 && time < end - 0.3) index = i;
         });
+        progress?.style.setProperty('--p', (time / TOTAL).toFixed(4));
         if (index === active) return;
         active = index;
         copies.forEach((el, i) => el.classList.toggle('is-active', i === index));
         dots.forEach((el, i) => el.toggleAttribute('aria-current', i === index));
-        section.dataset.scene = index >= 0 ? SCENES[index].key : index === -1 ? 'hero' : 'between';
+        const key = index >= 0 ? SCENES[index].key : index === -1 ? 'hero' : null;
+        if (key) {
+          section.dataset.scene = key;
+          root.dataset.navTone = toneOf(key);
+        }
       };
 
-      const tl = buildSceneTimeline(S);
+      const tl = buildSceneTimeline(S, STORY_PRODUCT.model);
       tl.eventCallback('onUpdate', () => {
         S.version++;
         setActive(tl.time());
       });
 
-      // Hero copy leaves first.
-      tl.to('.hero-copy', { opacity: 0, y: -40, duration: 0.6, ease: 'power1.in' }, 0.05);
+      // CSS reads --tone for the stage background when the 3D is not running.
+      tl.to(section, { '--tone': 1, duration: 1.2, ease: 'power2.inOut' }, 2.0).to(
+        section,
+        { '--tone': 0, duration: 1.2, ease: 'power2.inOut' },
+        20.4,
+      );
+
+      tl.to('.hero-copy', { opacity: 0, y: -40, duration: 0.5, ease: 'power1.in' }, 0.05);
 
       SCENES.forEach((scene, i) => {
         const el = copies[i];
@@ -163,7 +197,6 @@ function StoryAnimated() {
         if (end !== null) tl.to(el, { opacity: 0, y: -28, duration: 0.4, ease: 'power1.in' }, end - 0.45);
       });
 
-      // Battery meter (illustrative).
       const meter = section.querySelector('.charge');
       const pct = section.querySelector('.charge-value');
       if (meter && pct) {
@@ -173,18 +206,15 @@ function StoryAnimated() {
           pct.textContent = `${Math.round(proxy.v * 100)}%`;
         };
         write();
-        tl.to(proxy, { v: 1, duration: 0.9, ease: 'power1.inOut', onUpdate: write }, 14.0);
+        tl.to(proxy, { v: 1, duration: 0.9, ease: 'power1.inOut', onUpdate: write }, 17.2);
       }
 
-      // Still images when WebGL is unavailable.
       if (fallback) {
         const stills = gsap.utils.toArray('.stage-still', section);
-        const keys = ['hero', ...SCENES.map((s) => s.key)];
-        keys.forEach((key, i) => {
-          if (i === 0) return;
-          const t = SCENES[i - 1].time;
-          tl.fromTo(stills[i], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, Math.max(0, t + 0.1));
-          tl.to(stills[i - 1], { opacity: 0, duration: 0.5, ease: 'none' }, Math.max(0, t + 0.1));
+        SCENES.forEach((scene, i) => {
+          const t = Math.max(0, scene.time + 0.1);
+          tl.fromTo(stills[i + 1], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, t);
+          tl.to(stills[i], { opacity: 0, duration: 0.5, ease: 'none' }, t);
         });
       }
 
@@ -192,7 +222,7 @@ function StoryAnimated() {
         trigger: section,
         start: 'top top',
         end: 'bottom bottom',
-        scrub: 0.7,
+        scrub: 0.6,
         animation: tl,
         invalidateOnRefresh: true,
       });
@@ -202,12 +232,13 @@ function StoryAnimated() {
     section.classList.add('is-animated');
     return () => {
       section.classList.remove('is-animated');
+      delete root.dataset.navTone;
       ctx.revert();
     };
   }, [fallback]);
 
-  // Keyboard: focusing something inside a scene scrolls to that scene, so
-  // focus never lands on invisible copy.
+  // Keyboard: focusing something inside an off-screen scene scrolls to it,
+  // so focus never lands on invisible copy.
   useEffect(() => {
     const section = sectionRef.current;
     const onFocus = (e) => {
@@ -230,7 +261,6 @@ function StoryAnimated() {
     import('../three/experience.js')
       .then(({ createExperience }) => {
         if (cancelled) return;
-        const colour = STORY_PRODUCT.colours[0];
         S.intro = 0;
         experience = createExperience({
           container: canvasRef.current,
@@ -238,14 +268,14 @@ function StoryAnimated() {
           bgEl: bgRef.current,
           state: S,
           model: STORY_PRODUCT.model,
-          finish: colour.finish,
+          finish: STORY_COLOUR.finish,
           maxDpr: 1.5,
           onFirstFrame: () => {
             if (cancelled) return;
             setMode('3d');
             intro = gsap.to(S, {
               intro: 1,
-              duration: 1.8,
+              duration: 1.6,
               ease: 'power3.out',
               onUpdate: () => {
                 S.version++;
@@ -283,10 +313,12 @@ function StoryAnimated() {
           aria-hidden="true"
         />
       ))}
-      <span id="technology" className="story-anchor" style={{ '--f': SCENE_FOCUS.explode / TOTAL }} aria-hidden="true" />
 
       <div className="stage">
         <div className="stage-bg" ref={bgRef} aria-hidden="true" />
+        <p className="stage-word" aria-hidden="true">
+          {brand.wordmark}
+        </p>
         <div className="stage-canvas" ref={canvasRef} aria-hidden="true" />
         {fallback && (
           <div className="stage-stills">
@@ -296,7 +328,7 @@ function StoryAnimated() {
                 className="stage-still"
                 src={sceneImage(key)}
                 alt=""
-                width="1400"
+                width="1600"
                 height="1000"
                 decoding="async"
                 loading={i < 2 ? 'eager' : 'lazy'}
@@ -313,25 +345,12 @@ function StoryAnimated() {
         <div className="stage-labels" ref={labelsRef} aria-hidden="true" />
 
         <header className="hero-copy">
-          <HeroText animated />
+          <HeroText />
         </header>
 
-        {SCENES.map(({ key }) => (
-          <article key={key} className="scene-copy" data-scene={key} data-side={sceneCopy[key].side}>
-            <SceneText k={key}>
-              {key === 'battery' && (
-                <div className="charge" aria-hidden="true">
-                  <div className="charge-head">
-                    <span>Case charge (illustrative)</span>
-                    <span className="charge-value">18%</span>
-                  </div>
-                  <div className="charge-track">
-                    <span className="charge-fill" />
-                  </div>
-                </div>
-              )}
-              {key === 'final' && <FinalActions />}
-            </SceneText>
+        {SCENES.map(({ key, tone }) => (
+          <article key={key} className="scene-copy" data-scene={key} data-mood={tone} data-side={sceneCopy[key].side}>
+            <SceneText k={key}>{sceneExtras(key)}</SceneText>
           </article>
         ))}
 
@@ -341,12 +360,19 @@ function StoryAnimated() {
               <li key={key}>
                 <a className="rail-link" href={`#scene-${key}`}>
                   <span className="rail-dot" aria-hidden="true" />
-                  <span className="rail-label">{sceneCopy[key].eyebrow.split('/ ')[1]}</span>
+                  <span className="rail-label">{sceneCopy[key].eyebrow.split('/ ').pop()}</span>
                 </a>
               </li>
             ))}
           </ol>
         </nav>
+
+        <div className="story-progress" aria-hidden="true">
+          <span className="story-progress-bar" />
+        </div>
+        <a className="skip-story" href="#technology">
+          Skip the story
+        </a>
       </div>
     </section>
   );

@@ -43,6 +43,14 @@ export function createWaves() {
   const shield = new THREE.Mesh(geo, ringMaterial('#b8d8ff'));
   shield.visible = false;
   group.add(shield);
+  // Voice: rings that close in on the microphone.
+  const voice = [];
+  for (let i = 0; i < 4; i++) {
+    const mesh = new THREE.Mesh(geo, ringMaterial('#d9c08f'));
+    mesh.visible = false;
+    group.add(mesh);
+    voice.push({ mesh, offset: i / 4 });
+  }
 
   /**
    * @param time seconds
@@ -79,6 +87,16 @@ export function createWaves() {
       r.mesh.material.opacity =
         S.anc * (1 - S.calm) * Math.sin(Math.PI * phase) * 0.36 * smooth(boundary, boundary + 0.7, radius + 0.7);
     }
+    const showVoice = S.voice > 0.002 && centres[2];
+    for (const r of voice) {
+      r.mesh.visible = Boolean(showVoice);
+      if (!showVoice) continue;
+      const phase = (time * 0.35 + r.offset) % 1;
+      r.mesh.position.copy(centres[2]).applyQuaternion(inv);
+      r.mesh.scale.setScalar(0.06 + (1 - phase) * 0.55);
+      r.mesh.material.opacity = S.voice * Math.sin(Math.PI * phase) * 0.6;
+    }
+
     shield.visible = showNoise;
     if (showNoise) {
       shield.position.copy(mid);

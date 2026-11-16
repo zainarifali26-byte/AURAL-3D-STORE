@@ -6,20 +6,27 @@
     <title>AURAL | Sound Beyond Limits.</title>
     <meta
       name="description"
-      content="AURAL is a fictional wireless earbuds concept: a scroll-driven 3D product story and a frontend-only demo store with illustrative products and prices."
+      content="AURAL is a fictional premium headphones and earbuds concept: a cinematic 3D product story and a demo store with eight illustrative products."
     />
-    <meta name="theme-color" content="#07090D" />
-    <meta property="og:title" content="AURAL | Sound Beyond Limits." />
-    <meta property="og:description" content="A 3D product story and demo store for a fictional wireless earbuds concept." />
+    <meta name="theme-color" content="#F7FAFA" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AURAL (demo)" />
+    <meta property="og:title" content="AURAL | Sound Beyond Limits." />
+    <meta
+      property="og:description"
+      content="A 3D product story and demo store for a fictional headphones and earbuds concept."
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Canonical, og:url and og:image are added at runtime once brand.siteUrl is set (src/config/brand.js). -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/story/scene-hero.webp" as="image" type="image/webp" media="(prefers-reduced-motion: reduce)" />
   </head>
   <body>
     <div id="root"></div>
     <noscript>
-      <p style="padding: 24px; color: #fff; background: #07090d; font-family: sans-serif">
-        AURAL is a fictional earbuds concept. This demo needs JavaScript for its product story and bag.
+      <p style="padding: 24px; color: #071b35; background: #f7fafa; font-family: sans-serif">
+        AURAL is a fictional headphones and earbuds concept. This demo store needs JavaScript for its product story,
+        shop and bag.
       </p>
     </noscript>
     <script type="module" src="/src/main.jsx"></script>

@@ -28,43 +28,51 @@ export default function BagDrawer() {
     if (target && document.contains(target)) target.focus();
   };
 
-  const onClick = (e) => {
-    if (e.target === ref.current) setOpen(false); // backdrop
-  };
+  const close = () => setOpen(false);
 
   return (
-    <dialog ref={ref} className="drawer" aria-labelledby="drawer-title" onClose={onClose} onClick={onClick}>
+    <dialog
+      ref={ref}
+      className="drawer"
+      aria-labelledby="drawer-title"
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && close()}
+    >
       <div className="drawer-panel">
         <div className="drawer-head">
           <h2 id="drawer-title">
-            Bag <span className="drawer-count">{count}</span>
+            Your bag <span className="drawer-count">({count})</span>
           </h2>
-          <button type="button" className="icon-button" onClick={() => setOpen(false)} aria-label="Close bag">
+          <button type="button" className="icon-button" onClick={close} aria-label="Close bag">
             <Icon name="close" />
           </button>
         </div>
 
         {lines.length === 0 ? (
           <div className="drawer-empty">
-            <p>Your bag is empty.</p>
-            <Link className="btn btn-ghost" to="/#collection" onClick={() => setOpen(false)}>
-              Browse the collection
+            <p className="drawer-empty-title">Your bag is empty.</p>
+            <p className="fineprint">Add a pair from the shop. Your bag is saved in this browser only.</p>
+            <Link className="btn btn-primary" to="/shop" onClick={close}>
+              Shop all products
             </Link>
           </div>
         ) : (
           <>
             <div className="drawer-body">
-              <BagLines onNavigate={() => setOpen(false)} />
+              <BagLines onNavigate={close} compact />
             </div>
             <div className="drawer-foot">
-              <div className="summary-row">
-                <span>Subtotal (demo)</span>
+              <div className="summary-row summary-total">
+                <span>Subtotal</span>
                 <strong>{formatPrice(subtotal)}</strong>
               </div>
-              <p className="fineprint">Demo store. Prices are illustrative and nothing can be bought.</p>
-              <Link className="btn btn-primary btn-block" to="/bag" onClick={() => setOpen(false)}>
-                Review bag
+              <p className="fineprint">Demo store: prices are illustrative and no payment is ever taken.</p>
+              <Link className="btn btn-primary btn-block" to="/checkout" onClick={close}>
+                Checkout (demo)
                 <Icon name="arrow" size={18} />
+              </Link>
+              <Link className="btn btn-ghost btn-block" to="/bag" onClick={close}>
+                View bag
               </Link>
             </div>
           </>

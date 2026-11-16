@@ -1,53 +1,75 @@
 import { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Swatches from './Swatches.jsx';
+import ProductImage from './ProductImage.jsx';
+import Icon from './Icon.jsx';
 import { useBagActions } from '../state/bag.jsx';
 import { formatPrice } from '../config/brand.js';
-import { productImage, VIEW_LABELS } from '../data/products.js';
+import { AVAILABILITY, getCategory } from '../data/products.js';
 
-function ProductCard({ product, index }) {
+const BADGE_TEXT = { new: 'New', bestseller: 'Best seller', featured: 'Featured' };
+
+export function Badges({ product }) {
+  if (!product.badges.length) return null;
+  return (
+    <ul className="badges" aria-label="Labels">
+      {product.badges.map((b) => (
+        <li key={b} className={`badge${b === 'new' ? ' badge-new' : b === 'featured' ? ' badge-gold' : ''}`}>
+          {BADGE_TEXT[b]}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Product card. Variants:
+ *  - "standard": image on top (shop grid, rows)
+ *  - "wide": image beside the details (editorial rows on wide screens)
+ */
+function ProductCard({ product, variant = 'standard', sizes, onQuickView, headingLevel = 3 }) {
   const [colourId, setColourId] = useState(product.colours[0].id);
   const { add } = useBagActions();
   const colour = product.colours.find((c) => c.id === colourId);
   const href = `/products/${product.id}?colour=${colourId}`;
+  const Heading = `h${headingLevel}`;
+  const preorder = product.availability === 'preorder';
 
   return (
-    <article className="product-card" style={{ '--card-tint': colour.hex }} aria-labelledby={`card-${product.id}`}>
-      <div className="product-card-media">
-        <span className="product-index" aria-hidden="true">
-          {String(index + 1).padStart(2, '0')}
-        </span>
-        <img
-          src={productImage(product.id, colourId, 'set')}
-          alt={`${product.name} in ${colour.name}: ${VIEW_LABELS.set}`}
-          width="1000"
-          height="800"
-          loading="lazy"
-          decoding="async"
-        />
+    <article className={`product-card product-card-${variant}`} aria-labelledby={`card-${product.id}`}>
+      <div className="product-card-media" data-tone={colour.tone}>
+        <Badges product={product} />
+        <ProductImage product={product} colour={colour} sizes={sizes} />
+        {onQuickView && (
+          <button type="button" className="quick-view-button" onClick={() => onQuickView(product, colourId)}>
+            <Icon name="eye" size={18} />
+            Quick view<span className="sr-only"> of {product.name}</span>
+          </button>
+        )}
       </div>
       <div className="product-card-body">
-        <p className="eyebrow">{product.role}</p>
-        <h3 id={`card-${product.id}`} className="product-card-name">
+        <p className="product-card-cat">{getCategory(product.category).name}</p>
+        <Heading id={`card-${product.id}`} className="product-card-name">
           <Link to={href}>{product.name}</Link>
-        </h3>
-        <p className="product-card-desc">{product.tagline}</p>
-        <ul className="feature-list">
-          {product.features.slice(0, 3).map((f) => (
-            <li key={f}>{f}</li>
-          ))}
-        </ul>
-        <Swatches product={product} value={colourId} onChange={setColourId} size="sm" />
+        </Heading>
+        <p className="product-card-desc">{product.short}</p>
+        <Swatches product={product} value={colourId} onChange={setColourId} size="sm" hideLegend={variant === 'standard'} />
         <div className="product-card-foot">
-          <p className="price">
-            {formatPrice(product.price)} <span className="price-note">demo price</span>
-          </p>
+          <div>
+            <p className="price">
+              {formatPrice(product.price)} <span className="price-note">demo</span>
+            </p>
+            <p className={`availability availability-${product.availability}`}>{AVAILABILITY[product.availability]}</p>
+          </div>
           <div className="product-card-actions">
             <Link className="btn btn-ghost btn-sm" to={href}>
-              View details<span className="sr-only"> of {product.name}</span>
+              Details<span className="sr-only"> of {product.name}</span>
             </Link>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => add(product.id, colourId, 1)}>
-              Add to bag<span className="sr-only">: {product.name}, {colour.name}</span>
+              {preorder ? 'Pre-order' : 'Add to bag'}
+              <span className="sr-only">
+                : {product.name}, {colour.name}
+              </span>
             </button>
           </div>
         </div>

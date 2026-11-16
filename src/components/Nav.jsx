@@ -5,10 +5,16 @@ import Icon from './Icon.jsx';
 import { useBag } from '../state/bag.jsx';
 
 const LINKS = [
-  { to: '/#discover', label: 'Discover' },
-  { to: '/#collection', label: 'Products' },
-  { to: '/#technology', label: 'Technology' },
-  { to: '/compare', label: 'Compare', route: true },
+  { to: '/shop', label: 'Shop' },
+  { to: '/#technology', label: 'Technology', hash: true },
+  { to: '/compare', label: 'Compare' },
+  { to: '/about', label: 'About' },
+];
+const MORE = [
+  { to: '/faq', label: 'FAQ' },
+  { to: '/contact', label: 'Contact' },
+  { to: '/shipping', label: 'Shipping' },
+  { to: '/returns', label: 'Returns' },
 ];
 
 export default function Nav() {
@@ -20,7 +26,7 @@ export default function Nav() {
   const panel = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > 24);
+    const onScroll = () => setSolid(window.scrollY > 16);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -49,10 +55,17 @@ export default function Nav() {
     };
   }, [menuOpen]);
 
+  // Lock page scroll behind the open mobile menu.
+  useEffect(() => {
+    document.body.classList.toggle('menu-open', menuOpen);
+    return () => document.body.classList.remove('menu-open');
+  }, [menuOpen]);
+
   const close = () => setMenuOpen(false);
+  const navClass = ({ isActive }) => (isActive ? 'active' : undefined);
 
   return (
-    <header className={`nav${solid || menuOpen ? ' is-solid' : ''}`}>
+    <header className={`nav${solid || menuOpen ? ' is-solid' : ''}${menuOpen ? ' is-menu-open' : ''}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -62,11 +75,7 @@ export default function Nav() {
           <ul className="nav-links">
             {LINKS.map((l) => (
               <li key={l.label}>
-                {l.route ? (
-                  <NavLink to={l.to}>{l.label}</NavLink>
-                ) : (
-                  <Link to={l.to}>{l.label}</Link>
-                )}
+                {l.hash ? <Link to={l.to}>{l.label}</Link> : <NavLink to={l.to} className={navClass}>{l.label}</NavLink>}
               </li>
             ))}
           </ul>
@@ -88,22 +97,40 @@ export default function Nav() {
             aria-controls="mobile-menu"
             onClick={() => setMenuOpen((o) => !o)}
           >
-            <Icon name={menuOpen ? 'close' : 'menu'} size={22} />
+            <Icon name={menuOpen ? 'close' : 'menu'} size={24} />
             <span className="sr-only">{menuOpen ? 'Close menu' : 'Open menu'}</span>
           </button>
         </div>
       </div>
       <div id="mobile-menu" ref={panel} className="mobile-menu" hidden={!menuOpen}>
-        <ul>
-          {LINKS.map((l) => (
-            <li key={l.label}>
-              <Link to={l.to} onClick={close}>
-                {l.label}
-                <Icon name="arrow" size={18} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <nav aria-label="Mobile">
+          <ul>
+            {LINKS.map((l) => (
+              <li key={l.label}>
+                {l.hash ? (
+                  <Link to={l.to} onClick={close}>
+                    {l.label}
+                    <Icon name="arrow" size={18} />
+                  </Link>
+                ) : (
+                  <NavLink to={l.to} className={navClass} onClick={close}>
+                    {l.label}
+                    <Icon name="arrow" size={18} />
+                  </NavLink>
+                )}
+              </li>
+            ))}
+          </ul>
+          <ul className="mobile-menu-foot">
+            {MORE.map((l) => (
+              <li key={l.label}>
+                <Link to={l.to} onClick={close}>
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </header>
   );

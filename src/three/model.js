@@ -81,11 +81,34 @@ function capGeometry(a, c, n, faceUp) {
   return geo;
 }
 
-function latheZ(points, segments = 56) {
+function latheZ(points, segments = 96) {
   const curve = new THREE.SplineCurve(points.map(([r, y]) => new THREE.Vector2(r, y)));
-  const geo = new THREE.LatheGeometry(curve.getPoints(28), segments);
+  const geo = new THREE.LatheGeometry(curve.getPoints(48), segments);
   geo.rotateX(Math.PI / 2); // lathe axis Y -> bud axis Z
   return geo;
+}
+
+// Perforation pattern for the microphone grille: dark holes on bright metal.
+function grilleTexture() {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#2a2420';
+  const step = 13;
+  for (let y = step / 2; y < size; y += step) {
+    for (let x = step / 2 + ((y / step) % 2) * (step / 2); x < size; x += step) {
+      ctx.beginPath();
+      ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
 }
 
 function displayTexture() {
@@ -145,7 +168,7 @@ function buildCase(m, mats, track) {
     led.visible = false;
   }
 
-  const hinge = new THREE.Mesh(track(new THREE.CylinderGeometry(0.035, 0.035, a * 0.7, 16)), mats.accent);
+  const hinge = new THREE.Mesh(track(new THREE.CylinderGeometry(0.03, 0.03, a * (m.hingeLength ?? 0.7), 24)), mats.accent);
   hinge.rotation.z = Math.PI / 2;
   hinge.position.set(0, 0, -c * 0.985);
   caseGroup.add(hinge);
@@ -182,21 +205,28 @@ function buildBud(m, mats, track, { internals, side }) {
 
   // Outer shell: the touch faceplate dome.
   const shell = addPart('shell', 'Outer shell', [0, 0, 0.95]);
+  // faceDepth < 0.21 gives a flatter, more realistic touch surface; headOval
+  // squashes the head vertically so it reads as an egg rather than a ball.
+  const faceDepth = m.faceDepth ?? 0.21;
   const dome = [];
-  for (let i = 0; i <= 12; i++) {
-    const t = (i / 12) * (Math.PI / 2);
-    dome.push([R * Math.pow(Math.cos(t), 0.85), 0.21 * Math.sin(t)]);
+  for (let i = 0; i <= 16; i++) {
+    const t = (i / 16) * (Math.PI / 2);
+    dome.push([R * Math.pow(Math.cos(t), 0.7), faceDepth * Math.sin(t)]);
   }
   dome[dome.length - 1][0] = 0.0001;
   const shellMesh = new THREE.Mesh(track(latheZ(dome)), mats.bodyDouble);
-  shellMesh.scale.x = 1.12;
+  shellMesh.scale.set(1.12, m.headOval ?? 1, 1);
   shell.add(shellMesh);
 
-  const ringR = 0.19 * Math.min(m.ring, 1.25);
-  const ring = new THREE.Mesh(track(new THREE.TorusGeometry(ringR, 0.011 * m.ring, 10, 56)), mats.accent);
-  ring.position.z = 0.21 * Math.sin(Math.acos(Math.min(ringR / R, 1))) + 0.004;
-  ring.scale.x = 1.12;
-  shell.add(ring);
+  // Optional accent ring on the faceplate (ring: 0 keeps the face clean,
+  // which reads far more like a real product than a bright metal ring).
+  if (m.ring > 0) {
+    const ringR = 0.19 * Math.min(m.ring, 1.25);
+    const ring = new THREE.Mesh(track(new THREE.TorusGeometry(ringR, 0.011 * m.ring, 12, 96)), mats.accent);
+    ring.position.z = 0.21 * Math.sin(Math.acos(Math.min(ringR / R, 1))) + 0.004;
+    ring.scale.x = 1.12;
+    shell.add(ring);
+  }
 
   const housing = addPart('housing', 'Acoustic housing', [0, 0, -0.62]);
   const housingMesh = new THREE.Mesh(
@@ -213,10 +243,14 @@ function buildBud(m, mats, track, { internals, side }) {
     ),
     mats.bodyDouble,
   );
-  housingMesh.scale.x = 1.12;
+  housingMesh.scale.set(1.12, m.headOval ?? 1, 1);
   housing.add(housingMesh);
-  const seam = new THREE.Mesh(track(new THREE.TorusGeometry(R, 0.008, 8, 64)), mats.accent);
-  seam.scale.x = 1.12;
+  // Parting line between shell and housing: a fine dark groove by default.
+  const seam = new THREE.Mesh(
+    track(new THREE.TorusGeometry(R, m.seam === 'accent' ? 0.008 : 0.004, 8, 96)),
+    m.seam === 'accent' ? mats.accent : mats.inner,
+  );
+  seam.scale.set(1.12, m.headOval ?? 1, 1);
   housing.add(seam);
 
   if (m.budStyle === 'fin') {
@@ -229,14 +263,29 @@ function buildBud(m, mats, track, { internals, side }) {
   if (stem) {
     const L = m.stem;
     const stemPart = addPart('stem', 'Stem housing', [0, -0.4, 0.18]);
-    const stemMesh = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.075, L, 6, 20)), mats.body);
+    const stemMesh = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.075, L, 12, 32)), mats.body);
     stemMesh.position.y = -L / 2;
+    // Real stems are oval in section, not round tubes.
     if (m.stemShape === 'blade') stemMesh.scale.set(1.45, 1, 0.62);
+    else stemMesh.scale.set(1.05, 1, 0.8);
     stemPart.add(stemMesh);
-    const cap = new THREE.Mesh(track(new THREE.CylinderGeometry(0.077, 0.077, 0.05, 24)), mats.accent);
-    cap.position.y = -L - 0.02;
-    if (m.stemShape === 'blade') cap.scale.set(1.45, 1, 0.62);
-    stemPart.add(cap);
+    if (m.stemCap !== false) {
+      const cap = new THREE.Mesh(track(new THREE.CylinderGeometry(0.077, 0.077, 0.05, 32)), mats.accent);
+      cap.position.y = -L - 0.02;
+      if (m.stemShape === 'blade') cap.scale.set(1.45, 1, 0.62);
+      stemPart.add(cap);
+    }
+    if (m.grille) {
+      // Perforated metal microphone grille where the stem meets the head.
+      const grille = new THREE.Mesh(track(new THREE.CircleGeometry(0.052, 40)), mats.grille);
+      grille.position.set(0, -0.07, 0.075 * 0.8 + 0.003);
+      grille.scale.set(1, 1.25, 1);
+      stemPart.add(grille);
+      const rim = new THREE.Mesh(track(new THREE.TorusGeometry(0.053, 0.006, 8, 48)), mats.grilleRim);
+      rim.position.copy(grille.position);
+      rim.scale.set(1, 1.25, 1);
+      stemPart.add(rim);
+    }
     if (m.stemShape === 'blade') {
       // Polished outer plate along the blade.
       const plate = new THREE.Mesh(track(new THREE.BoxGeometry(0.15, L * 0.9, 0.012)), mats.accent);
@@ -329,7 +378,22 @@ function buildBud(m, mats, track, { internals, side }) {
 
 // Physically based shell material: a clear lacquer coat over the base colour
 // reads as real polished plastic; matte finishes get a faint coat for depth.
-function shellMaterial(color, roughness, metalness) {
+// surface 'soft-touch' is the velvety coated plastic of premium earbuds: a
+// broad, low highlight and a faint sheen instead of a mirror lacquer.
+function shellMaterial(color, roughness, metalness, surface) {
+  if (surface === 'soft-touch') {
+    return new THREE.MeshPhysicalMaterial({
+      color,
+      roughness: Math.max(roughness, 0.42),
+      metalness,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.55,
+      sheen: 0.35,
+      sheenRoughness: 0.6,
+      sheenColor: new THREE.Color('#5a5a5f'),
+      specularIntensity: 0.55,
+    });
+  }
   return new THREE.MeshPhysicalMaterial({
     color,
     roughness,
@@ -341,7 +405,7 @@ function shellMaterial(color, roughness, metalness) {
 }
 
 export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) {
-  const body = shellMaterial(finish.body, model.roughness, model.metalness);
+  const body = shellMaterial(finish.body, model.roughness, model.metalness, model.surface);
   const bodyDouble = body.clone();
   bodyDouble.side = THREE.DoubleSide;
 
@@ -349,14 +413,16 @@ export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) 
     finish.case ?? finish.body,
     model.caseRoughness ?? model.roughness,
     model.caseMetalness ?? model.metalness,
+    model.surface,
   );
   caseMat.side = THREE.DoubleSide;
   const lid = model.lidMetal
     ? new THREE.MeshStandardMaterial({ color: finish.lid ?? finish.accent, roughness: 0.24, metalness: 1, side: THREE.DoubleSide })
     : caseMat;
 
-  const inner = new THREE.MeshStandardMaterial({ color: '#0a0c10', roughness: 0.75, metalness: 0.1 });
-  inner.color.lerp(new THREE.Color(finish.case ?? finish.body), 0.22);
+  // Inside of the case: a deep, fully matte tone so it reads as a recess.
+  const inner = new THREE.MeshStandardMaterial({ color: '#08090b', roughness: 0.92, metalness: 0 });
+  inner.color.lerp(new THREE.Color(finish.case ?? finish.body), 0.12);
 
   const mats = {
     body,
@@ -376,13 +442,24 @@ export function createMaterials(finish = DEFAULT_FINISH, model = DEFAULT_MODEL) 
       sheenColor: new THREE.Color(finish.tip).lerp(new THREE.Color('#ffffff'), 0.3),
       side: THREE.DoubleSide,
     }),
-    led: new THREE.MeshBasicMaterial({ color: '#b8d8ff' }),
+    led: new THREE.MeshBasicMaterial({ color: finish.led ?? '#fff1dc' }),
     pcb: new THREE.MeshStandardMaterial({ color: '#12352f', roughness: 0.6, metalness: 0.3 }),
     chip: new THREE.MeshStandardMaterial({ color: '#15171c', roughness: 0.35, metalness: 0.6 }),
     gold: new THREE.MeshStandardMaterial({ color: '#d9b36a', roughness: 0.3, metalness: 1 }),
     steel: new THREE.MeshStandardMaterial({ color: '#aeb6c2', roughness: 0.28, metalness: 1 }),
     copper: new THREE.MeshStandardMaterial({ color: '#c98a5e', roughness: 0.35, metalness: 1 }),
   };
+  if (model.grille) {
+    const dots = grilleTexture();
+    mats.grille = new THREE.MeshPhysicalMaterial({
+      color: finish.grille ?? finish.accent,
+      map: dots,
+      roughness: 0.38,
+      metalness: 1,
+    });
+    mats.grilleRim = new THREE.MeshPhysicalMaterial({ color: finish.grille ?? finish.accent, roughness: 0.22, metalness: 1 });
+    mats.grilleMap = dots;
+  }
   if (model.display) {
     const map = displayTexture();
     mats.display = new THREE.MeshBasicMaterial({ map });

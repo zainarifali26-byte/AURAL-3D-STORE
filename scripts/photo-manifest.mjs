@@ -3,7 +3,11 @@
 // use, modification allowed, no attribution required; credited anyway in
 // src/data/credits.js). Every photo was checked for visible logos.
 //
-// crop: [x, y, w, h] as fractions of the source image.
+// crop: [x, y, w, h] as fractions of the source image. For product shots the
+//       crop is drawn around the WHOLE product so nothing is ever cut off.
+// fit:  'cover' fills the frame with the crop (only where the crop already
+//       has the frame's shape); 'contain' fits the whole crop inside the frame
+//       with `pad` margin and feathered edges onto the studio backdrop.
 // mode:
 //   plate      multiply the photo onto the AURAL studio backdrop (white-seamless photos)
 //   key-yellow key out a yellow backdrop, then place on the studio backdrop
@@ -18,23 +22,20 @@ export const PHOTOS = [
   { id: 'pro-x-pair', pexels: 29128040, crop: [0.22, 0, 0.534, 1], mode: 'key-white', size: 'portrait', cutout: true },
   { id: 'pro-x-wide', pexels: 33797659, crop: [0.06, 0.08, 1 - 0.12, 0.84], mode: 'key-yellow', size: 'wide' },
 
-  // AURAL One: white over-ear headphones
-  { id: 'one-front', pexels: 3394665, crop: [0.285, 0, 0.534, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-angle', pexels: 3394652, crop: [0.27, 0, 0.534, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-upright', pexels: 3394666, crop: [0.235, 0, 0.534, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-top', pexels: 3394650, crop: [0.1, 0, 0.8, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-cup', pexels: 3394648, crop: [0.1, 0, 0.8, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-cushion', pexels: 3394653, crop: [0.1, 0, 0.8, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-case', pexels: 3394656, crop: [0.33, 0, 0.534, 1], mode: 'plate', size: 'portrait' },
-  { id: 'one-wide', pexels: 3394665, crop: [0, 0.04, 1, 0.94], mode: 'plate', size: 'wide' },
+  // AURAL One: white on-ear headphones (whole product in every frame)
+  { id: 'one-front', pexels: 3394665, crop: [0.17, 0.08, 0.73, 0.9], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'one-angle', pexels: 3394652, crop: [0.2, 0.04, 0.68, 0.94], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'one-upright', pexels: 3394666, crop: [0.28, 0.04, 0.48, 0.94], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'one-top', pexels: 3394650, crop: [0.02, 0, 0.96, 1], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'one-case', pexels: 3394656, crop: [0.05, 0.06, 0.9, 0.9], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'one-wide', pexels: 3394665, crop: [0.08, 0.04, 0.88, 0.94], fit: 'contain', pad: 0.05, mode: 'plate', size: 'wide' },
 
   // AURAL Studio: black over-ear headphones
-  { id: 'studio-front', pexels: 7772548, crop: [0, 0.167, 1, 0.833], mode: 'plate', size: 'portrait' },
-  { id: 'studio-hand', pexels: 7772549, crop: [0, 0.25, 1, 0.703], mode: 'plate', size: 'portrait' },
-  { id: 'studio-detail', pexels: 7772547, crop: [0.3, 0, 0.534, 1], mode: 'plate', size: 'portrait' },
-  { id: 'studio-wide', pexels: 7772547, crop: [0, 0, 1, 1], mode: 'plate', size: 'wide' },
+  { id: 'studio-front', pexels: 7772548, crop: [0, 0.44, 1, 0.56], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'studio-side', pexels: 7772547, crop: [0.06, 0.06, 0.9, 0.92], fit: 'contain', pad: 0.05, mode: 'plate', size: 'portrait' },
+  { id: 'studio-wide', pexels: 7772547, crop: [0.02, 0.04, 0.96, 0.92], fit: 'contain', pad: 0.05, mode: 'plate', size: 'wide' },
 
-  // Lifestyle (the white over-ear headphones being worn)
+  // Lifestyle (the white headphones being worn): people, cropped as portraits
   { id: 'life-portrait', pexels: 3394664, crop: [0, 0.04, 1, 0.834], mode: 'photo', size: 'portrait' },
   { id: 'life-comfort', pexels: 3756912, crop: [0.08, 0, 0.8, 1], mode: 'photo', size: 'portrait' },
 ];

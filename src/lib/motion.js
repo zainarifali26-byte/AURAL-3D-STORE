@@ -33,7 +33,8 @@ export function useScrollMotion(scopeRef, deps = []) {
         const img = el.querySelector('img');
         const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: 'top 85%', once: true } });
         tl.from(el, { clipPath: 'inset(100% 0% 0% 0%)', duration: 1.2, ease: 'power4.inOut' });
-        if (img) tl.from(img, { scale: 1.14, duration: 1.6, ease: 'power3.out' }, 0);
+        // Settle from a slight zoom-out so the product is never cropped.
+        if (img) tl.from(img, { scale: 0.94, autoAlpha: 0.4, duration: 1.4, ease: 'power3.out' }, 0);
       });
 
       gsap.utils.toArray('[data-split]', scope).forEach((el) => {

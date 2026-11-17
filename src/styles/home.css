@@ -85,14 +85,14 @@
 
 .hero-stage-inner {
   position: absolute;
-  inset: -4% 0;
+  inset: 0;
 }
 
 .hero-slide {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(1.03);
+  transform: scale(0.98);
   transition:
     opacity 900ms var(--ease),
     transform 1400ms var(--ease);
@@ -106,7 +106,7 @@
 .hero-slide img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .hero-slide.is-cutout img {
@@ -221,7 +221,7 @@
 .cat-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 1200ms var(--ease);
 }
 
@@ -278,324 +278,6 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--s-5) var(--s-4);
-}
-
-/* ---- Technology ---- */
-
-.tech {
-  padding-block: var(--section);
-  background: var(--forest);
-}
-
-.tech-head {
-  margin-bottom: clamp(40px, 6vw, 80px);
-}
-
-.tech-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 96px);
-  align-items: start;
-}
-
-.tech-stage {
-  position: sticky;
-  top: calc(var(--nav-h) + 24px);
-  display: grid;
-  gap: var(--s-4);
-}
-
-.tech-stage-media {
-  position: relative;
-  aspect-ratio: 4 / 5;
-  max-height: calc(100svh - var(--nav-h) - 220px);
-  width: 100%;
-  border-radius: var(--r);
-  overflow: hidden;
-}
-
-.tech-shot {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: scale(1.04);
-  transition:
-    opacity 700ms var(--ease),
-    transform 1200ms var(--ease);
-}
-
-.tech-shot.is-active {
-  opacity: 1;
-  transform: none;
-}
-
-.tech-shot img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.tech-stage-diagram {
-  position: relative;
-  height: 150px;
-}
-
-.tech-diagram {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 500ms var(--ease);
-}
-
-.tech-diagram.is-active {
-  opacity: 1;
-}
-
-.tech-progress {
-  display: flex;
-  gap: 6px;
-}
-
-.tech-progress li {
-  flex: 1;
-  height: 2px;
-  background: var(--line-dark);
-  transition: background-color var(--dur-3) var(--ease);
-}
-
-.tech-progress li.is-active {
-  background: var(--champagne);
-}
-
-.tech-chapters {
-  display: grid;
-}
-
-.tech-chapter {
-  display: grid;
-  align-content: center;
-  gap: var(--s-3);
-  min-height: 62svh;
-  padding-block: var(--s-7);
-  border-top: 1px solid var(--line-dark);
-  opacity: 0.4;
-  transition: opacity var(--dur-3) var(--ease);
-}
-
-.tech-chapter.is-active {
-  opacity: 1;
-}
-
-.tech-chapter h3 {
-  font-size: var(--fs-xl);
-  color: var(--on-dark);
-}
-
-.tech-chapter p {
-  max-width: 30rem;
-  color: var(--on-dark-muted);
-  font-size: var(--fs-md);
-}
-
-.tech-num {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--champagne);
-}
-
-.tech-inline,
-.tech-inline-diagram {
-  display: none;
-}
-
-/* Diagrams */
-.diagram-wrap {
-  height: 100%;
-}
-
-.diagram {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  font-family: var(--font);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.diagram text {
-  fill: var(--on-dark-muted);
-  text-transform: uppercase;
-}
-
-.diagram .d-big {
-  font-size: 18px;
-  fill: var(--on-dark);
-  text-transform: none;
-  letter-spacing: -0.01em;
-}
-
-.diagram path,
-.diagram line,
-.diagram circle,
-.diagram rect {
-  fill: none;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-
-.d-noise {
-  stroke: var(--on-dark-muted);
-}
-
-.d-anti {
-  stroke: var(--champagne);
-  stroke-dasharray: 4 4;
-}
-
-.d-mid,
-.d-draw,
-.d-ring,
-.d-voice {
-  stroke: var(--champagne);
-}
-
-.d-mid {
-  stroke-width: 2;
-}
-
-.d-grid,
-.d-track,
-.d-device,
-.d-case,
-.d-tip {
-  stroke: var(--line-dark);
-}
-
-.d-tip {
-  stroke: var(--on-dark-muted);
-}
-
-.d-tip-inner {
-  stroke: var(--champagne);
-}
-
-.diagram .d-node {
-  fill: var(--champagne);
-  stroke: none;
-}
-
-.d-fill {
-  fill: rgb(194 164 109 / 0.35);
-  stroke: none;
-  transform-box: fill-box;
-  transform-origin: left;
-}
-
-.d-pulse {
-  stroke: var(--champagne);
-  opacity: 0;
-}
-
-.d-beam {
-  fill: rgb(194 164 109 / 0.12);
-  stroke: rgb(194 164 109 / 0.4);
-}
-
-.d-ring {
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dashoffset: calc(var(--c) * 0.22);
-}
-
-.d-draw {
-  stroke-width: 2.5;
-  stroke-dasharray: 600;
-}
-
-.diagram-wrap.is-active .d-draw {
-  animation: draw 2.4s var(--ease) both;
-}
-
-.diagram-wrap.is-active .d-ring {
-  animation: ring 2s var(--ease) both;
-}
-
-.diagram-wrap.is-active .d-fill {
-  animation: fill 2.4s var(--ease-in-out) infinite alternate;
-}
-
-.diagram-wrap.is-active .d-pulse {
-  animation: pulse 2s var(--ease) infinite;
-}
-
-.diagram-wrap.is-active .d-voice {
-  animation: voice 1.6s var(--ease-in-out) infinite;
-}
-
-.diagram-wrap.is-active .d-noise,
-.diagram-wrap.is-active .d-anti {
-  animation: drift 3s linear infinite;
-}
-
-@keyframes draw {
-  from {
-    stroke-dashoffset: 600;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes ring {
-  from {
-    stroke-dashoffset: var(--c);
-  }
-}
-
-@keyframes fill {
-  from {
-    transform: scaleX(0.2);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.9;
-    transform: scale(0.6);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.15);
-  }
-}
-
-.d-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-@keyframes voice {
-  0%,
-  100% {
-    opacity: 0.2;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes drift {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -16;
-  }
 }
 
 /* ---- Brand story ---- */
@@ -721,7 +403,7 @@
 .cta-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* =========================================================================
@@ -760,35 +442,6 @@
   .cat-xl .cat-media {
     aspect-ratio: 16 / 10;
     height: auto;
-  }
-
-  .tech-layout {
-    grid-template-columns: 1fr;
-  }
-  .tech-stage {
-    display: none;
-  }
-  .tech-chapter {
-    min-height: 0;
-    opacity: 1;
-    padding-block: var(--s-6);
-  }
-  .tech-inline {
-    display: block;
-    aspect-ratio: 16 / 11;
-    border-radius: var(--r);
-    overflow: hidden;
-    margin-bottom: var(--s-2);
-  }
-  .tech-inline img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .tech-inline-diagram {
-    display: block;
-    height: 120px;
-    margin-bottom: var(--s-2);
   }
 
   .story-grid {

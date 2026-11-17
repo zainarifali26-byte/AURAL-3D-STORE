@@ -5,6 +5,7 @@ import QuantityStepper from '../components/QuantityStepper.jsx';
 import { AssetImage } from '../components/ProductImage.jsx';
 import ProductCard, { Badges } from '../components/ProductCard.jsx';
 import Icon from '../components/Icon.jsx';
+import Product3D from '../components/Product3D.jsx';
 import NotFound from './NotFound.jsx';
 import { useBag } from '../state/bag.jsx';
 import { brand, formatPrice } from '../config/brand.js';
@@ -162,6 +163,8 @@ function ProductDetail({ product }) {
             </div>
           </div>
         </div>
+
+        <Product3D key={`${product.id}-${colour.id}`} product={product} colour={colour} />
 
         <div className="pdp-details">
           <section className="pdp-section" aria-labelledby="about-title">

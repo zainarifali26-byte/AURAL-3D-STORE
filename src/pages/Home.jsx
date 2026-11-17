@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard.jsx';
 import { AssetImage } from '../components/ProductImage.jsx';
 import SplitText from '../components/SplitText.jsx';
-import TechDiagram from '../components/TechDiagram.jsx';
+import Story from '../story/Story.jsx';
 import Icon from '../components/Icon.jsx';
 import { products, getProduct, CATEGORIES } from '../data/products.js';
 import { PHOTO_ASSETS, renderAsset } from '../data/assets.js';
 import { brand, formatPrice } from '../config/brand.js';
 import { useScrollMotion, prefersReducedMotion } from '../lib/motion.js';
-import { gsap, ScrollTrigger } from '../lib/gsap.js';
+import { gsap } from '../lib/gsap.js';
 import usePageMeta from '../hooks/usePageMeta.js';
 
 const A = PHOTO_ASSETS;
@@ -56,9 +56,10 @@ function Hero() {
         .from('.hero-slide.is-active img', { scale: 1.12, duration: 1.8 }, 0)
         .from('.hero-copy > *', { y: 30, autoAlpha: 0, duration: 1, stagger: 0.08 }, 0.35)
         .from('.hero-switch', { autoAlpha: 0, y: 12, duration: 0.8 }, 0.9);
-      // The product drifts slightly as the hero scrolls away.
-      gsap.to('.hero-stage-inner', {
-        yPercent: 8,
+      // The whole stage drifts slightly as the hero scrolls away (the image
+      // itself never moves inside its frame, so it is never cropped).
+      gsap.to('.hero-stage', {
+        yPercent: 6,
         ease: 'none',
         scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: true },
       });
@@ -203,126 +204,10 @@ function Featured() {
   );
 }
 
-// ---- Technology: pinned visual, chapters scroll past -----------------------
-const CHAPTERS = [
-  {
-    id: 'anc',
-    title: 'Active noise cancellation',
-    text: 'Microphones listen to the room and the earbuds play the opposite signal, so engines and air-conditioning fall away. Adaptive ANC is part of the Pro X and Studio demo specifications.',
-    asset: A['studio-front'],
-  },
-  {
-    id: 'sound',
-    title: 'Sound quality',
-    text: 'A balanced tuning that keeps voices clear and detail intact at sensible volumes, instead of chasing loudness.',
-    asset: A['one-cup'],
-  },
-  {
-    id: 'battery',
-    title: 'Battery performance',
-    text: 'From a full working day in the earbuds to several days in the over-ear models, with quick top-ups in the case. Figures are illustrative demo values.',
-    asset: A['pro-x-pair'],
-  },
-  {
-    id: 'connect',
-    title: 'Connectivity',
-    text: 'Current Bluetooth on every model, and multipoint on the flagships, so a call on your phone does not end the music on your laptop.',
-    asset: A['pro-x-hero'],
-  },
-  {
-    id: 'fit',
-    title: 'Comfort and fit',
-    text: 'Several ear-tip sizes for a proper seal, and soft protein-leather cushions on the over-ear models. A good fit does most of the work.',
-    asset: A['one-cushion'],
-  },
-  {
-    id: 'mic',
-    title: 'Microphone technology',
-    text: 'Microphones placed toward your mouth pick up your voice ahead of the street around you. Call quality is a demo claim, not a measurement.',
-    asset: A['studio-hand'],
-  },
-];
-
-function Technology() {
-  const [active, setActive] = useState(0);
-  const root = useRef(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.utils.toArray('.tech-chapter', root.current).forEach((el, i) => {
-        ScrollTrigger.create({
-          trigger: el,
-          start: 'top 55%',
-          end: 'bottom 55%',
-          onToggle: (self) => self.isActive && setActive(i),
-        });
-      });
-    }, root);
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <section id="technology" className="tech on-dark" ref={root} aria-labelledby="tech-title">
-      <div className="container">
-        <div className="section-head tech-head">
-          <p className="eyebrow" data-reveal="">
-            Technology
-          </p>
-          <SplitText id="tech-title" className="section-title" text="The quiet engineering inside." />
-          <p className="lead" data-reveal="">
-            Six things good headphones get right, explained plainly. Diagrams are illustrative; specifications are demo
-            information.
-          </p>
-        </div>
-
-        <div className="tech-layout">
-          <div className="tech-stage" aria-hidden="true">
-            <div className="tech-stage-media studio-backdrop">
-              {CHAPTERS.map((c, i) => (
-                <div key={c.id} className={`tech-shot${i === active ? ' is-active' : ''}`}>
-                  <AssetImage asset={c.asset} alt="" sizes="(max-width: 960px) 1px, 46vw" />
-                </div>
-              ))}
-            </div>
-            <div className="tech-stage-diagram">
-              {CHAPTERS.map((c, i) => (
-                <div key={c.id} className={`tech-diagram${i === active ? ' is-active' : ''}`}>
-                  <TechDiagram type={c.id} active={i === active} />
-                </div>
-              ))}
-            </div>
-            <ol className="tech-progress">
-              {CHAPTERS.map((c, i) => (
-                <li key={c.id} className={i === active ? 'is-active' : undefined} />
-              ))}
-            </ol>
-          </div>
-
-          <ol className="tech-chapters">
-            {CHAPTERS.map((c, i) => (
-              <li key={c.id} className={`tech-chapter${i === active ? ' is-active' : ''}`}>
-                <div className="tech-inline studio-backdrop" aria-hidden="true">
-                  <AssetImage asset={c.asset} alt="" sizes="(max-width: 960px) 92vw, 1px" />
-                </div>
-                <div className="tech-inline-diagram" aria-hidden="true">
-                  <TechDiagram type={c.id} active />
-                </div>
-                <span className="tech-num">0{i + 1}</span>
-                <h3>{c.title}</h3>
-                <p>{c.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ---- Brand story ------------------------------------------------------------
 function BrandStory() {
   return (
-    <section className="section story" aria-labelledby="story-title">
+    <section id="brand-story" className="section story" aria-labelledby="brand-title">
       <div className="container story-grid">
         <div className="story-media-main" data-reveal="mask">
           <div className="parallax-frame">
@@ -342,7 +227,7 @@ function BrandStory() {
           <p className="eyebrow" data-reveal="">
             About {brand.name}
           </p>
-          <SplitText id="story-title" className="section-title" text="Designed to disappear." />
+          <SplitText id="brand-title" className="section-title" text="Designed to disappear." />
           <p className="lead" data-reveal="">
             The best headphones are the ones you stop noticing. {brand.name} is a design concept built around that idea:
             fewer shapes, honest materials, and technology that earns its place.
@@ -420,7 +305,7 @@ export default function Home() {
       <Hero />
       <Categories />
       <Featured />
-      <Technology />
+      <Story />
       <BrandStory />
       <FinalCta />
     </div>

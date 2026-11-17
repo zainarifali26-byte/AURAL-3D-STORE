@@ -45,7 +45,7 @@ for (const p of PHOTOS) {
   const dataUrl = `data:image/jpeg;base64,${(await readFile(file)).toString('base64')}`;
   const [W, H] = SIZES[p.size];
   const result = await page.evaluate(
-    async ({ dataUrl, crop, mode, W, H, cutout }) => {
+    async ({ dataUrl, crop, mode, W, H, cutout, fit, pad }) => {
       const img = new Image();
       img.src = dataUrl;
       await img.decode();
@@ -55,16 +55,71 @@ for (const p of PHOTOS) {
       const sw = img.width * cw;
       const sh = img.height * ch;
 
-      // Draw the crop, scaled to cover W x H.
+      // Draw the crop. 'cover' fills W x H; 'contain' fits the whole crop
+      // inside the frame with `pad` margin and feathered edges, so the
+      // product is never cut off and blends into the studio backdrop.
       const src = document.createElement('canvas');
       src.width = W;
       src.height = H;
       const sctx = src.getContext('2d');
       sctx.imageSmoothingQuality = 'high';
-      const scale = Math.max(W / sw, H / sh);
-      const dw = sw * scale;
-      const dh = sh * scale;
-      sctx.drawImage(img, sx, sy, sw, sh, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      if (fit === 'contain') {
+        const innerW = W * (1 - 2 * pad);
+        const innerH = H * (1 - 2 * pad);
+        const scale = Math.min(innerW / sw, innerH / sh);
+        const dw = sw * scale;
+        const dh = sh * scale;
+        const dx = (W - dw) / 2;
+        const dy = (H - dh) / 2;
+        sctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+        // White-balance the seamless backdrop of the photo to pure white, so
+        // after multiplying it becomes exactly the studio backdrop (no grey box).
+        if (mode === 'plate') {
+          const d = sctx.getImageData(0, 0, W, H);
+          const px = d.data;
+          const band = Math.round(Math.min(dw, dh) * 0.03);
+          const sum = [0, 0, 0];
+          let n = 0;
+          const add = (x, y) => {
+            const i = (Math.round(y) * W + Math.round(x)) * 4;
+            sum[0] += px[i];
+            sum[1] += px[i + 1];
+            sum[2] += px[i + 2];
+            n++;
+          };
+          for (let t = 0; t <= 1; t += 0.02) {
+            add(dx + band, dy + band + t * (dh - 2 * band));
+            add(dx + dw - band, dy + band + t * (dh - 2 * band));
+            add(dx + band + t * (dw - 2 * band), dy + band);
+            add(dx + band + t * (dw - 2 * band), dy + dh - band);
+          }
+          const gain = sum.map((s) => Math.max(1, 252 / (s / n)));
+          for (let i = 0; i < px.length; i += 4) {
+            if (!px[i + 3]) continue;
+            px[i] = Math.min(255, px[i] * gain[0]);
+            px[i + 1] = Math.min(255, px[i + 1] * gain[1]);
+            px[i + 2] = Math.min(255, px[i + 2] * gain[2]);
+          }
+          sctx.putImageData(d, 0, 0);
+        }
+        // Feather mask: a blurred rectangle slightly inside the drawn crop.
+        const feather = Math.min(dw, dh) * 0.035;
+        const mask = document.createElement('canvas');
+        mask.width = W;
+        mask.height = H;
+        const mctx = mask.getContext('2d');
+        mctx.filter = `blur(${feather / 2}px)`;
+        mctx.fillStyle = '#fff';
+        mctx.fillRect(dx + feather, dy + feather, dw - 2 * feather, dh - 2 * feather);
+        sctx.globalCompositeOperation = 'destination-in';
+        sctx.drawImage(mask, 0, 0);
+        sctx.globalCompositeOperation = 'source-over';
+      } else {
+        const scale = Math.max(W / sw, H / sh);
+        const dw = sw * scale;
+        const dh = sh * scale;
+        sctx.drawImage(img, sx, sy, sw, sh, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      }
 
       const out = document.createElement('canvas');
       out.width = W;
@@ -199,7 +254,7 @@ for (const p of PHOTOS) {
         cutHalf: cut ? encode(cut, W / 2, H / 2, 0.86) : null,
       };
     },
-    { dataUrl, crop: p.crop, mode: p.mode, W, H, cutout: Boolean(p.cutout) },
+    { dataUrl, crop: p.crop, mode: p.mode, W, H, cutout: Boolean(p.cutout), fit: p.fit ?? 'cover', pad: p.pad ?? 0.06 },
   );
 
   const save = (name, url) => writeFile(path.join(outDir, name), Buffer.from(url.split(',')[1], 'base64'));

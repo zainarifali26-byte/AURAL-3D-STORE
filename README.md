@@ -16,9 +16,8 @@ npm run preview    # serve the build locally
 
 ## Stack
 
-React 19, React Router 7, Vite, GSAP + ScrollTrigger. Manrope is self-hosted (Fontsource). No other runtime
-dependencies, no analytics, no cookies, no third-party scripts. three.js is a **dev-only** dependency used by the
-offline render script.
+React 19, React Router 7, Vite, three.js, GSAP + ScrollTrigger. Manrope is self-hosted (Fontsource). No analytics,
+cookies or third-party scripts. three.js loads in its own lazy chunk only where 3D is shown.
 
 ## Routes
 
@@ -39,7 +38,9 @@ src/
   components/            Nav, SearchDialog, Footer, ProductCard, ProductImage, QuickView, BagDrawer, TechDiagram…
   state/bag.jsx          bag reducer (add, quantity, colour change, remove, clear) + localStorage
   styles/                base.css (design system), home.css, store.css
-  three/, render/        procedural models + offline renderer for concept renders (dev only)
+  story/                 scroll-driven 3D story (timeline, copy, sticky stage, fallbacks)
+  three/                 3D models, studio lighting, effects, story stage (experience.js), product viewer
+  render/                dev-only offline renderer for concept renders and story stills
 scripts/
   photo-manifest.mjs     which Pexels photos are used, crops and processing mode
   process-photos.mjs     crops, keys backdrops, bakes the studio backdrop, exports WebP (1600/800)
@@ -63,7 +64,8 @@ Dark sections are used sparingly (technology in forest, closing CTA and footer i
 - **Concept renders (Air, Pulse, Neo, Sport, Mini):** no legitimately reusable, unbranded photography was found for
   these designs (free stock photos of earbuds overwhelmingly show identifiable brands such as Apple, Nothing, Amazon,
   Bang & Olufsen, JBL, Jabra, OPPO and Philips). They are shown as clearly labelled concept renders.
-- All images share one 4:5 frame and one baked studio backdrop, so a product looks identical everywhere.
+- All images share one 4:5 frame and one baked studio backdrop, and every product photo is framed around the whole
+  product and shown with object-fit: contain, so nothing is ever cropped.
 
 To replace an image: process a new photo with `scripts/process-photos.mjs` (add it to the manifest), then point the
 colour's `images` list in `src/data/products.js` at the new key in `PHOTO_ASSETS`.
@@ -74,13 +76,24 @@ node scripts/process-photos.mjs <folder with <pexelsId>.jpg files>
 npm run render:products          # concept renders (needs local Chrome/Edge)
 ```
 
+## 3D
+
+- **Home: scroll-driven 3D story** (`src/story`). A sticky stage with the Pro X model: the case opens, the earbuds
+  lift out and turn, one earbud separates into labelled layers, then microphone, noise cancellation, charging and
+  water scenes, ending on a light hero shot. Scrolling up reverses it. Realistic look: image-based studio lighting
+  (three.js RoomEnvironment), soft-touch black shell with a perforated rose-gold grille, real-time soft shadows.
+- **Product pages: "Explore in 3D"** (`src/three/viewer.js`). Scroll turns the model (earbuds: case opens and the
+  earbuds lift out); drag to rotate. Loads only when the section is near.
+- Performance: renders only when something changes, pauses off-screen, capped pixel ratio that drops on slow frames.
+- No WebGL: the story crossfades pre-rendered stills (`public/story`) and the product 3D section is hidden.
+  Reduced motion: the story becomes a stacked page of stills.
+- `npm run render:products story` re-renders the stills after changing the model.
+
 ## Motion
 
 - Hero: stage wipes open, copy rises, product switcher crossfades between the three photographed products,
   subtle parallax as the hero scrolls away.
 - Sections: masked image reveals, word-by-word headline reveals, fade-ups, parallax on editorial photos.
-- Technology: a pinned (sticky) stage on desktop whose photo and animated SVG diagram change as each chapter scrolls
-  past; stacked chapters with inline diagrams on mobile.
 - Cards: second image on hover, quick view; navigation hides on scroll down and returns on scroll up.
 - `prefers-reduced-motion`: no GSAP animation runs and all content is visible immediately.
 

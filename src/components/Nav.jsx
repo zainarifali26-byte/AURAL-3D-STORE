@@ -81,7 +81,7 @@ export default function Nav() {
   const show = !hidden || menuOpen;
 
   return (
-    <header className={`nav${solid || menuOpen ? ' is-solid' : ''}${show ? '' : ' is-hidden'}`}>
+    <header className={`nav${solid || menuOpen ? ' is-solid' : ''}${show ? '' : ' is-hidden'}${menuOpen ? ' is-menu-open' : ''}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>

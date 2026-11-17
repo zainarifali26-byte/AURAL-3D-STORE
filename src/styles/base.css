@@ -608,6 +608,34 @@ ol {
   transform: translateY(-100%);
 }
 
+/* Over the dark scenes of the 3D story the bar turns light-on-dark. */
+:root[data-nav-tone='dark'] .nav {
+  color: var(--on-dark);
+}
+
+:root[data-nav-tone='dark'] .nav .nav-links a {
+  color: var(--on-dark-muted);
+}
+
+:root[data-nav-tone='dark'] .nav .nav-links a:hover,
+:root[data-nav-tone='dark'] .nav .nav-links a.active {
+  color: var(--on-dark);
+}
+
+:root[data-nav-tone='dark'] .nav.is-solid {
+  background: rgb(24 25 27 / 0.72);
+  box-shadow: 0 1px 0 var(--line-dark);
+}
+
+:root[data-nav-tone='dark'] .nav .icon-button:hover {
+  background: rgb(255 255 255 / 0.08);
+}
+
+:root[data-nav-tone='dark'] .nav.is-menu-open {
+  color: var(--ink);
+  background: var(--ivory);
+}
+
 .nav-inner {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -856,7 +884,8 @@ body.menu-open {
 .search-result img {
   width: 56px;
   height: 70px;
-  object-fit: cover;
+  object-fit: contain;
+  background: #efebe5;
   border-radius: var(--r-xs);
 }
 

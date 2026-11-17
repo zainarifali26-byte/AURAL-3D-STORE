@@ -119,4 +119,37 @@ window.__aural = {
   },
 };
 
+// Story stills: the scroll story's 3D stage frozen at each scene, used when
+// WebGL is unavailable and for the reduced-motion version of the story.
+window.__aural.scene = async (key, w = 1600, h = 1000) => {
+  const [{ createExperience }, { createStoryState, buildSceneTimeline, SCENE_FOCUS }] = await Promise.all([
+    import('../three/experience.js'),
+    import('../story/timeline.js'),
+  ]);
+  const stageEl = document.getElementById('stage');
+  stageEl.style.width = `${w}px`;
+  stageEl.style.height = `${h}px`;
+  const product = getProduct('pro-x');
+  const S = createStoryState(product.model);
+  const tl = buildSceneTimeline(S, product.model);
+  tl.seek(SCENE_FOCUS[key], false);
+  S.cam.side = 0;
+  S.cam.lift = 0;
+  S.float = 0;
+  S.version++;
+  const experience = createExperience({
+    container: stageEl,
+    state: S,
+    model: product.model,
+    finish: product.colours[0].finish,
+    maxDpr: 1,
+    preserveDrawingBuffer: true,
+  });
+  experience.renderNow(1.35);
+  const url = experience.canvas.toDataURL('image/webp', 0.84);
+  experience.dispose();
+  tl.kill();
+  return url;
+};
+
 window.__auralReady = true;

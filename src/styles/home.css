@@ -834,10 +834,17 @@
     right: var(--gutter);
     bottom: 96px;
   }
+  /* The credit wraps to two lines on phones: keep it below the bar. */
+  .film-progress {
+    bottom: calc(var(--s-7) + env(safe-area-inset-bottom, 0px));
+  }
+  .film-loading {
+    bottom: calc(var(--s-7) + 12px + env(safe-area-inset-bottom, 0px));
+  }
   .film-credit {
     left: var(--gutter);
-    right: auto;
-    bottom: calc(var(--s-6) - 22px);
+    right: var(--gutter);
+    bottom: max(var(--s-3), env(safe-area-inset-bottom, 0px));
   }
   .rail-pin {
     min-height: 0;

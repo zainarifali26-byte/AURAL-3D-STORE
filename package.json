@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:phone": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:phone": "vite build && vite preview --host",
     "lint": "eslint .",
     "render:products": "node scripts/render-products.mjs"
   },

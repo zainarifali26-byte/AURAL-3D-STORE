@@ -14,6 +14,11 @@ npm run build      # production build in dist/
 npm run preview    # serve the build locally
 ```
 
+**On a phone:** connect the phone to the same Wi-Fi as the computer, run `npm run preview:phone` (builds, then
+serves on the network) or `npm run dev:phone`, and open the `Network:` address it prints (for example
+`http://192.168.x.x:4183`). Plain `npm run dev` / `npm run preview` only answer on this computer, so `localhost`
+links do not open on a phone. If the phone cannot connect, allow Node.js through Windows Firewall.
+
 ## Stack
 
 React 19, React Router 7, Vite, GSAP + ScrollTrigger, Lenis (smooth scrolling on GSAP's ticker). Manrope and

@@ -12,7 +12,6 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { products } from '../src/data/products.js';
-import { SCENES } from '../src/story/timeline.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CANDIDATES = [
@@ -51,15 +50,6 @@ try {
   page.on('pageerror', (e) => console.error('page error:', e.message));
   await page.goto(`${url}render.html`, { waitUntil: 'load' });
   await page.waitForFunction('window.__auralReady === true', { timeout: 60000 });
-  if (!only || only === 'story') {
-    const storyDir = path.join(root, 'public', 'story');
-    await mkdir(storyDir, { recursive: true });
-    for (const key of ['hero', ...SCENES.map((s) => s.key)]) {
-      const dataUrl = await page.evaluate((k) => window.__aural.scene(k), key);
-      await writeFile(path.join(storyDir, `scene-${key}.webp`), Buffer.from(dataUrl.split(',')[1], 'base64'));
-    }
-    console.log('story stills rendered');
-  }
   for (const p of products) {
     if (p.imagery !== 'render' || (only && p.id !== only)) continue;
     for (const c of p.colours) {

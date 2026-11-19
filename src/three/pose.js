@@ -1,4 +1,4 @@
-// Pose helpers shared by the 3D model and the story timeline. This file has
+// Pose helpers shared by the 3D model and the offline renderer. This file has
 // no three.js import, so the timeline can use it without pulling three.js
 // into the main bundle.
 

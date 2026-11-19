@@ -1,12 +1,15 @@
-﻿import { lazy, Suspense, useEffect, useLayoutEffect } from 'react';
+﻿import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Nav from './components/Nav.jsx';
 import Footer from './components/Footer.jsx';
 import BagDrawer from './components/BagDrawer.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Cursor from './components/Cursor.jsx';
+import Preloader from './components/Preloader.jsx';
 import { useBag } from './state/bag.jsx';
 import { ScrollTrigger } from './lib/gsap.js';
+import { startSmoothScroll, scrollToTarget, setScrollLocked } from './lib/smooth.js';
 
 // Store pages are split out so the home page loads less JavaScript.
 const ShopPage = lazy(() => import('./pages/ShopPage.jsx'));
@@ -30,7 +33,7 @@ function ScrollManager() {
   const { pathname, hash, key } = useLocation();
 
   useLayoutEffect(() => {
-    if (!hash) window.scrollTo(0, 0);
+    if (!hash) scrollToTarget(0, { immediate: true });
   }, [pathname, hash]);
 
   useEffect(() => {
@@ -45,7 +48,7 @@ function ScrollManager() {
         return;
       }
       ScrollTrigger.refresh();
-      el?.scrollIntoView({ block: 'start' });
+      if (el) scrollToTarget(el, { immediate: tries > 0 });
     };
     frame = requestAnimationFrame(go);
     return () => cancelAnimationFrame(frame);
@@ -68,15 +71,42 @@ function PageFallback() {
   return <div className="page-loading" aria-hidden="true" />;
 }
 
+// Pause smooth scrolling while a modal or the mobile menu is open.
+function ScrollLock() {
+  const { open } = useBag();
+  useEffect(() => {
+    const update = () => setScrollLocked(open || document.body.classList.contains('menu-open') || Boolean(document.querySelector('dialog[open]')));
+    update();
+    // Only dialog `open` attributes (anywhere) and the body's own class matter.
+    const dialogs = new MutationObserver(update);
+    dialogs.observe(document.body, { attributes: true, attributeFilter: ['open'], subtree: true });
+    const body = new MutationObserver(update);
+    body.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => {
+      dialogs.disconnect();
+      body.disconnect();
+    };
+  }, [open]);
+  return null;
+}
+
 export default function App() {
+  const { pathname } = useLocation();
+  const [introDone, setIntroDone] = useState(pathname !== '/');
+  useEffect(() => {
+    startSmoothScroll();
+  }, []);
   return (
     <>
+      {pathname === '/' && !introDone && <Preloader onDone={() => setIntroDone(true)} />}
+      <Cursor />
       <ScrollManager />
+      <ScrollLock />
       <Nav />
       <main id="main" tabIndex={-1}>
         <Suspense fallback={<PageFallback />}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home introDone={introDone} />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/products/:id" element={<ProductPage />} />
             <Route path="/compare" element={<ComparePage />} />

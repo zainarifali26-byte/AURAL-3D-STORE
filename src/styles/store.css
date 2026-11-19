@@ -26,12 +26,12 @@
   z-index: 2;
   padding: 3px 8px;
   border-radius: var(--r-xs);
-  background: rgb(251 250 247 / 0.82);
+  background: rgb(251 250 247 / 0.86);
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #4a4c50;
 }
 
 .availability {
@@ -52,11 +52,11 @@
 }
 
 .availability-low-stock {
-  color: #8a5a00;
+  color: #e0b36b;
 }
 
 .availability-preorder {
-  color: #36598f;
+  color: #a9c1ea;
 }
 
 /* ---- Swatches ---- */
@@ -204,7 +204,7 @@
 .card-media {
   position: relative;
   aspect-ratio: 4 / 5;
-  border-radius: var(--r);
+  border-radius: var(--r-sm);
   overflow: hidden;
   background: radial-gradient(78% 78% at 50% 44%, #f8f6f2 0%, #efebe5 55%, #e2ddd5 100%);
 }
@@ -261,6 +261,7 @@
   border: 0;
   border-radius: var(--r-pill);
   background: rgb(251 250 247 / 0.9);
+  color: #141414;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   font-size: var(--fs-sm);
@@ -290,9 +291,9 @@
 }
 
 .card-name {
-  font-size: var(--fs-md);
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
 }
 
 .card-name a {
@@ -877,6 +878,7 @@
 }
 
 .gallery-count {
+  color: #141414;
   min-width: 44px;
   text-align: center;
   font-size: var(--fs-xs);

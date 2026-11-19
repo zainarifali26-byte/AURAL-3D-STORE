@@ -71,7 +71,7 @@ export const products = [
         finish: { body: '#1c1d20', case: '#1a1b1e', accent: '#b98a72', tip: '#141517', grille: '#c99a80' },
       },
     ],
-    // 3D model used by the scroll story and the product page's 3D section.
+    // Procedural model parameters (used by the offline render tooling).
     model: {
       budStyle: 'stem',
       stem: 0.6,

@@ -1,7 +1,7 @@
 # AURAL — premium headphones & earbuds concept store (frontend demo)
 
-A premium audio e-commerce frontend for **AURAL**, a fictional headphones and earbuds concept: editorial home page,
-scroll-driven storytelling, a complete demo shop and an honest asset pipeline. AURAL is a temporary demo name, not a
+A premium audio e-commerce frontend for **AURAL**, a fictional headphones and earbuds concept: dark editorial home page,
+a scroll-scrubbed product film, cursor-reactive motion, a complete demo shop and an honest asset pipeline. AURAL is a temporary demo name, not a
 registered brand. Products, prices, availability and specifications are illustrative; nothing can be purchased.
 
 ## Run it
@@ -16,8 +16,9 @@ npm run preview    # serve the build locally
 
 ## Stack
 
-React 19, React Router 7, Vite, three.js, GSAP + ScrollTrigger. Manrope is self-hosted (Fontsource). No analytics,
-cookies or third-party scripts. three.js loads in its own lazy chunk only where 3D is shown.
+React 19, React Router 7, Vite, GSAP + ScrollTrigger, Lenis (smooth scrolling on GSAP's ticker). Manrope and
+Instrument Serif are self-hosted (Fontsource). No analytics, cookies or third-party scripts. three.js is a dev
+dependency only, used offline to produce the concept renders; the site itself ships no WebGL.
 
 ## Routes
 
@@ -31,30 +32,34 @@ src/
   config/brand.js        name, copy, placeholders, siteUrl for canonical tags   ← rebrand here
   data/products.js       the 8 demo products (single source for every page)
   data/assets.js         central image registry: photos + concept renders, srcset helpers
-  data/credits.js        photographer and licence data for every photo
-  lib/motion.js          GSAP ScrollTrigger reveals, masks, split headlines, parallax (off under reduced motion)
+  data/credits.js        photographer, videographer and licence data for every photo and clip
+  lib/smooth.js          Lenis smooth scrolling, scrollToTarget, scroll lock (off under reduced motion)
+  lib/motion.js          prefersReducedMotion()
   lib/gsap.js            registers GSAP plugins once
   pages/                 Home, Shop, Product, Compare, Bag, Checkout, InfoPages (+ Credits), NotFound
-  components/            Nav, SearchDialog, Footer, ProductCard, ProductImage, QuickView, BagDrawer, TechDiagram…
+  components/            Nav, SearchDialog, Footer, ProductCard, ProductImage, QuickView, BagDrawer,
+                         Film (scroll film), SoundField (pointer waveform), Cursor, Preloader…
   state/bag.jsx          bag reducer (add, quantity, colour change, remove, clear) + localStorage
   styles/                base.css (design system), home.css, store.css
-  story/                 scroll-driven 3D story (timeline, copy, sticky stage, fallbacks)
-  three/                 3D models, studio lighting, effects, story stage (experience.js), product viewer
-  render/                dev-only offline renderer for concept renders and story stills
+  three/                 dev-only 3D models and studio lighting for the concept renders
+  render/                dev-only offline renderer for the concept renders
 scripts/
   photo-manifest.mjs     which Pexels photos are used, crops and processing mode
   process-photos.mjs     crops, keys backdrops, bakes the studio backdrop, exports WebP (1600/800)
   render-products.mjs    renders the concept-render products onto the same backdrop
   backdrop.js            the shared "studio pearl" backdrop
+  extract-frames.mjs     cuts the Pexels clips into graded WebP frame sequences for the film
 public/images/photos     processed photography      public/images/renders   concept renders
+public/media             hero.mp4 + poster, seq/<chapter>/{lg,sm}/NNN.webp (film frames)
 ```
 
 ## Design system
 
-Tokens at the top of `src/styles/base.css`: warm ivory `#F6F3EE`, pearl `#FBFAF7`, studio `#EFEBE5`, silver,
-champagne `#C2A46D` (text variant `#7A5F2E` for AA), sage, forest `#1E3A2F`, charcoal `#18191B`. One typeface
-(Manrope) with a fluid type scale, a 4 px spacing scale, small radii, two shadows and shared easing/durations.
-Dark sections are used sparingly (technology in forest, closing CTA and footer in charcoal).
+"After hours": a dark editorial system. Tokens at the top of `src/styles/base.css`: near-black surfaces
+`--g-0 #0C0C0C` … `--g-3 #242422`, bone text `#ECE7DF` (secondary `#C8C2B8`, muted `#8C877F`), one accent,
+champagne `#C9A978`, and a light studio tone `#EFEBE5` for product tiles (it matches the backdrop baked into the
+images). Manrope for UI and body, Instrument Serif italic for one accent word per headline. A fine film-grain
+overlay, a 4 px spacing scale, small radii and shared easing. Buttons fill like liquid on hover.
 
 ## Product imagery — read this
 
@@ -76,26 +81,31 @@ node scripts/process-photos.mjs <folder with <pexelsId>.jpg files>
 npm run render:products          # concept renders (needs local Chrome/Edge)
 ```
 
-## 3D
+## Home page motion
 
-- **Home: scroll-driven 3D story** (`src/story`). A sticky stage with the Pro X model: the case opens, the earbuds
-  lift out and turn, one earbud separates into labelled layers, then microphone, noise cancellation, charging and
-  water scenes, ending on a light hero shot. Scrolling up reverses it. Realistic look: image-based studio lighting
-  (three.js RoomEnvironment), soft-touch black shell with a perforated rose-gold grille, real-time soft shadows.
-- **Product pages: "Explore in 3D"** (`src/three/viewer.js`). Scroll turns the model (earbuds: case opens and the
-  earbuds lift out); drag to rotate. Loads only when the section is near.
-- Performance: renders only when something changes, pauses off-screen, capped pixel ratio that drops on slow frames.
-- No WebGL: the story crossfades pre-rendered stills (`public/story`) and the product 3D section is hidden.
-  Reduced motion: the story becomes a stacked page of stills.
-- `npm run render:products story` re-renders the stills after changing the model.
+- **Preloader:** wordmark rises while a counter runs to 100, then the curtain lifts. Once per session, home only.
+- **Hero:** muted black-and-white video loop with a canvas "sound field": waveform lines that bend toward the
+  pointer and ripple outward where it moves. Static on touch devices.
+- **Custom cursor:** a dot plus a lagging ring (blend mode difference) that grows over links and shows labels such
+  as "View" or "Explore" (`data-cursor`). Fine pointers only.
+- **Film** (`src/components/Film.jsx`): an Apple-style scroll-scrubbed image sequence in four chapters (the case,
+  opening, from above, in the hand), 180 frames drawn to a sticky canvas, with dips to black between chapters,
+  a slow push-in and captions tied to scroll. Scrolling up plays it backwards. Frames load progressively (key frames
+  first) and phones get smaller frames. The footage is real video of an **unbranded stand-in product**
+  (H.Espinosa Films, Pexels License), not an AURAL design; it is credited on the page and on `/credits`.
+- **Also:** word-by-word manifesto scrub, stat counters, velocity-driven marquee, pinned horizontal product rail
+  (desktop; native swipe on smaller screens), category list with a cursor-following preview, 3D-tilt spotlight,
+  parallax brand story and magnetic buttons.
+- **Reduced motion:** no preloader, cursor, smooth scrolling or scrubbing; the film becomes four still chapters and
+  all content is visible immediately.
 
-## Motion
+```bash
+# the film frames are committed; to regenerate them, download the five Pexels clips (ids in
+# scripts/extract-frames.mjs) as <id>.mp4 into one folder, then:
+node scripts/extract-frames.mjs <folder>
+```
 
-- Hero: stage wipes open, copy rises, product switcher crossfades between the three photographed products,
-  subtle parallax as the hero scrolls away.
-- Sections: masked image reveals, word-by-word headline reveals, fade-ups, parallax on editorial photos.
-- Cards: second image on hover, quick view; navigation hides on scroll down and returns on scroll up.
-- `prefers-reduced-motion`: no GSAP animation runs and all content is visible immediately.
+Weight: hero video 2.5 MB; film frames 3.7 MB (desktop) or 2.1 MB (mobile), loaded only as the film approaches.
 
 ## Simulated, not real
 

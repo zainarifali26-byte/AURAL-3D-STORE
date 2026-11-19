@@ -6,7 +6,7 @@ import { AssetImage } from '../components/ProductImage.jsx';
 import { brand } from '../config/brand.js';
 import { products } from '../data/products.js';
 import { PHOTO_ASSETS, assetSrc } from '../data/assets.js';
-import { PHOTO_SOURCES, PHOTOGRAPHERS, PEXELS_LICENSE, photoPage } from '../data/credits.js';
+import { PHOTO_SOURCES, PHOTOGRAPHERS, PEXELS_LICENSE, photoPage, VIDEO_CREATOR, VIDEO_SOURCES, videoPage } from '../data/credits.js';
 import usePageMeta from '../hooks/usePageMeta.js';
 
 function InfoLayout({ eyebrow, title, lead, children, aside }) {
@@ -86,7 +86,7 @@ export function AboutPage() {
 }
 
 export function CreditsPage() {
-  usePageMeta('Image credits', 'Sources and licences for the photography used in the AURAL demo store.');
+  usePageMeta('Image credits', 'Sources and licences for the photography and video used in the AURAL demo store.');
   const used = Object.values(PHOTO_ASSETS).reduce((map, a) => {
     (map[a.pexels] ??= []).push(a);
     return map;
@@ -120,6 +120,23 @@ export function CreditsPage() {
             </li>
           );
         })}
+      </ul>
+      <h2>Film footage</h2>
+      <p>
+        The hero video and the scroll film on the home page use video clips by {VIDEO_CREATOR} on Pexels, under the
+        same <a href={PEXELS_LICENSE}>Pexels License</a>. The earbuds in the footage are an unbranded stand-in product,
+        not an AURAL design. The clips were trimmed, graded to black and white and cut into still frames.
+      </p>
+      <ul className="credit-list">
+        {VIDEO_SOURCES.map((v) => (
+          <li key={v.id} className="credit">
+            <span>
+              <a href={videoPage(v.id)}>Pexels video {v.id}</a> by {VIDEO_CREATOR}
+              <br />
+              <span className="fineprint">Used as: {v.use}</span>
+            </span>
+          </li>
+        ))}
       </ul>
       <h2>Concept renders</h2>
       <p>

@@ -32,3 +32,17 @@ export const PHOTO_SOURCES = {
 };
 
 export const photoPage = (id) => `https://www.pexels.com/photo/${id}/`;
+
+// Video footage (Pexels License), all by H.Espinosa Films. The earbuds shown
+// are an unbranded stand-in product. Used graded to black and white: as the
+// hero loop and as scroll-scrubbed frame sequences in the home-page film.
+export const VIDEO_CREATOR = 'H.Espinosa Films';
+export const VIDEO_SOURCES = [
+  { id: 4982734, use: 'Hero background loop' },
+  { id: 4982729, use: 'Film chapter 1: the case' },
+  { id: 4982732, use: 'Film chapter 2: opening' },
+  { id: 4982738, use: 'Film chapter 3: from above' },
+  { id: 4982735, use: 'Film chapter 4: in the hand' },
+];
+
+export const videoPage = (id) => `https://www.pexels.com/video/${id}/`;

@@ -7,3 +7,7 @@ Thumbs.db
 .env
 .env.*
 .netlify/
+render-preview/
+
+.vercel
+.env*

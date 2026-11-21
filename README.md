@@ -98,6 +98,11 @@ npm run render:products          # concept renders (needs local Chrome/Edge)
   a slow push-in and captions tied to scroll. Scrolling up plays it backwards. Frames load progressively (key frames
   first) and phones get smaller frames. The footage is real video of an **unbranded stand-in product**
   (H.Espinosa Films, Pexels License), not an AURAL design; it is credited on the page and on `/credits`.
+- **Pro X film** (`src/components/ProXFilm.jsx`, same `Film` component): an original scroll film rendered from the
+  procedural model by `scripts/render-film.mjs` (`npm run render:film`): the earbuds float in the dark, the case turns on
+  a glossy floor, the lid opens and the light wakes, the earbuds rise. 4 × 45 frames in two cuts: wide 1600×900 for
+  laptops and desktops, tall 720×1280 for portrait screens, so the product fills every screen. No stock footage and no
+  third-party brand.
 - **Also:** word-by-word manifesto scrub, stat counters, velocity-driven marquee, pinned horizontal product rail
   (desktop; native swipe on smaller screens), category list with a cursor-following preview, 3D-tilt spotlight,
   parallax brand story and magnetic buttons.
@@ -110,7 +115,7 @@ npm run render:products          # concept renders (needs local Chrome/Edge)
 node scripts/extract-frames.mjs <folder>
 ```
 
-Weight: hero video 2.5 MB; film frames 3.7 MB (desktop) or 2.1 MB (mobile), loaded only as the film approaches.
+Weight: hero video 2.5 MB; film frames 3.7 MB (desktop) or 2.1 MB (mobile); Pro X film frames are loaded only as that film approaches.
 
 ## Simulated, not real
 

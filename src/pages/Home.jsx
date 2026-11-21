@@ -4,6 +4,7 @@ import ProductCard from '../components/ProductCard.jsx';
 import { AssetImage } from '../components/ProductImage.jsx';
 import SoundField from '../components/SoundField.jsx';
 import Film from '../components/Film.jsx';
+import ProXFilm from '../components/ProXFilm.jsx';
 import Icon from '../components/Icon.jsx';
 import { products, getProduct, CATEGORIES } from '../data/products.js';
 import { PHOTO_ASSETS, renderAsset, assetSrc } from '../data/assets.js';
@@ -666,6 +667,7 @@ export default function Home({ introDone = true }) {
       <Manifesto />
       <Film />
       <Marquee words={['Quiet', 'Clarity', 'Craft', 'Comfort', 'AURAL']} />
+      <ProXFilm />
       <Collection />
       <Categories />
       <Spotlight />

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollTrigger } from '../lib/gsap.js';
 
-// Scroll-scrubbed film: real footage, decoded to graded WebP frames
-// (scripts/extract-frames.mjs), drawn to a canvas as the section scrolls.
-// Four chapters with dip-to-black transitions and editorial captions.
+// Scroll-scrubbed film: a WebP frame sequence drawn to a canvas as the section
+// scrolls. Chapters with dip-to-black transitions and editorial captions.
 // Frames load progressively (first frame of each chapter first); phones get
 // the smaller set. Reduced motion shows the chapters as still images.
+// Configurable (see STAND_IN_FILM and components/ProXFilm.jsx).
 
 export const FILM_CHAPTERS = [
   {
@@ -37,25 +37,33 @@ export const FILM_CHAPTERS = [
     body: 'Light in the palm, quiet in the ear. Everything else fades.',
   },
 ];
-const PER_CHAPTER = 45;
-const TOTAL = FILM_CHAPTERS.length * PER_CHAPTER;
-
-const frameUrl = (chapter, n, size) => `/media/seq/${chapter}/${size}/${String(n).padStart(3, '0')}.webp`;
+/** The stand-in footage film (scripts/extract-frames.mjs). */
+const STAND_IN_FILM = {
+  id: 'technology',
+  label: 'The film',
+  chapters: FILM_CHAPTERS,
+  perChapter: 45,
+  frame: (chapter, n, size) => `/media/seq/${chapter}/${size}/${String(n).padStart(3, '0')}.webp`,
+  pickSize: () => (window.innerWidth < 900 || (navigator.connection && navigator.connection.saveData) ? 'sm' : 'lg'),
+  still: { width: 1280, height: 720 },
+  credit: 'Footage: unbranded stand-in product, H.Espinosa Films via Pexels.',
+};
 
 function useReducedMotion() {
   const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   return reduced;
 }
 
-function FilmStatic() {
+function FilmStatic({ config }) {
+  const titleId = `${config.id}-title`;
   return (
-    <section id="technology" className="film-static" aria-labelledby="film-title">
-      <h2 id="film-title" className="sr-only">
-        The film
+    <section id={config.id} className="film-static" aria-labelledby={titleId}>
+      <h2 id={titleId} className="sr-only">
+        {config.label}
       </h2>
-      {FILM_CHAPTERS.map((c) => (
+      {config.chapters.map((c) => (
         <article key={c.id} className="film-static-item">
-          <img src={frameUrl(c.id, 23, 'lg')} alt="" width="1280" height="720" loading="lazy" />
+          <img src={config.frame(c.id, Math.ceil(config.perChapter / 2), 'lg')} alt="" width={config.still.width} height={config.still.height} loading="lazy" />
           <div>
             <p className="eyebrow">
               {c.index} · {c.kicker}
@@ -71,7 +79,12 @@ function FilmStatic() {
   );
 }
 
-function FilmAnimated() {
+function FilmAnimated({ config }) {
+  const FILM_CHAPTERS = config.chapters;
+  const PER_CHAPTER = config.perChapter;
+  const TOTAL = FILM_CHAPTERS.length * PER_CHAPTER;
+  const frameUrl = config.frame;
+  const titleId = `${config.id}-title`;
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
   const [loaded, setLoaded] = useState(0);
@@ -80,7 +93,7 @@ function FilmAnimated() {
     const section = sectionRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { alpha: false });
-    const size = window.innerWidth < 900 || (navigator.connection && navigator.connection.saveData) ? 'sm' : 'lg';
+    const size = config.pickSize();
     const frames = new Array(TOTAL);
     let cancelled = false;
     let count = 0;
@@ -244,18 +257,20 @@ function FilmAnimated() {
       ro.disconnect();
       st.kill();
     };
+    // The config is static for the life of the section.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pct = Math.round((loaded / TOTAL) * 100);
 
   return (
-    <section id="technology" ref={sectionRef} className="film" aria-labelledby="film-title">
+    <section id={config.id} ref={sectionRef} className="film" aria-labelledby={titleId}>
       <div className="film-sticky">
         <canvas ref={canvasRef} className="film-canvas" aria-hidden="true" />
         <div className="film-shade" aria-hidden="true" />
         <div className="film-ui container">
-          <h2 id="film-title" className="film-label">
-            <span className="eyebrow">The film</span>
+          <h2 id={titleId} className="film-label">
+            <span className="eyebrow">{config.label}</span>
           </h2>
           <ol className="film-ticks" aria-hidden="true">
             {FILM_CHAPTERS.map((c) => (
@@ -283,14 +298,14 @@ function FilmAnimated() {
               Loading film {pct}%
             </p>
           )}
-          <p className="film-credit">Footage: unbranded stand-in product, H.Espinosa Films via Pexels.</p>
+          <p className="film-credit">{config.credit}</p>
         </div>
       </div>
     </section>
   );
 }
 
-export default function Film() {
+export default function Film({ config = STAND_IN_FILM }) {
   const reduced = useReducedMotion();
-  return reduced ? <FilmStatic /> : <FilmAnimated />;
+  return reduced ? <FilmStatic config={config} /> : <FilmAnimated config={config} />;
 }

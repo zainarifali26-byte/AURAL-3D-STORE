@@ -1,5 +1,11 @@
 # AURAL — premium headphones & earbuds concept store (frontend demo)
 
+Live demo: https://aural-store.vercel.app
+
+![AURAL homepage](docs/screenshot.webp)
+
+> Concept project designed and built by [Zain Ali Arif](https://zainaliarif.com).
+
 A premium audio e-commerce frontend for **AURAL**, a fictional headphones and earbuds concept: dark editorial home page,
 a scroll-scrubbed product film, cursor-reactive motion, a complete demo shop and an honest asset pipeline. AURAL is a temporary demo name, not a
 registered brand. Products, prices, availability and specifications are illustrative; nothing can be purchased.
